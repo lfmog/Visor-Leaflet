@@ -2,9 +2,18 @@
 const map = L.map('map').setView([4.5709, -74.2973], 6);
 
 // Add base map - Using OpenStreetMap as base
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-}).addTo(map);
+// Define base maps
+const baseMaps = {
+    "OpenStreetMap": L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+    }),
+    "ESRI Satellite": L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+        attribution: 'Tiles &copy; Esri &mdash; Source: Esri, Maxar, Earthstar Geographics'
+    })
+};
+
+// Add default base map
+baseMaps["OpenStreetMap"].addTo(map);
 
 // Custom style for polygon layer
 const polygonStyle = {
@@ -139,6 +148,21 @@ function getPointIcon(zoomLevel) {
 
 // Store current point layers to update them on zoom
 const pointLayers = [];
+
+// Base map toggle control
+document.getElementById('base-street').addEventListener('change', function() {
+    if (this.checked) {
+        map.removeLayer(baseMaps["ESRI Satellite"]);
+        map.addLayer(baseMaps["OpenStreetMap"]);
+    }
+});
+
+document.getElementById('base-satellite').addEventListener('change', function() {
+    if (this.checked) {
+        map.removeLayer(baseMaps["OpenStreetMap"]);
+        map.addLayer(baseMaps["ESRI Satellite"]);
+    }
+});
 
 function loadGeoJSON(url, layer, style, labelField, layerType = 'polygon') {
     fetch(url)

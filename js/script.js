@@ -151,11 +151,7 @@ function loadGeoJSON(url, layer, style, labelField, layerType = 'polygon') {
             const geoJsonLayer = L.geoJSON(data, {
                 pointToLayer: function(feature, latlng) {
                     if (layerType === 'point') {
-                         const marker = L.marker(latlng, {
-                            icon: getPointIcon(map.getZoom())
-                        });
-                        pointLayers.push(marker); // Store for later updates
-                        return marker;
+                        return L.marker(latlng, { icon: pointIcon });
                     }
                     return L.circleMarker(latlng, style);
                 },
@@ -176,23 +172,37 @@ function loadGeoJSON(url, layer, style, labelField, layerType = 'polygon') {
                         const label = L.marker(layer.getBounds ? layer.getBounds().getCenter() : layer.getLatLng(), {
                             icon: L.divIcon({
                                 className: 'map-label',
-                                html: `<div class="label-text" style="font-size: 12px; font-weight: bold; color: ${
+                                html: `<div style="font-size: 12px; font-weight: bold; color: ${
                                     layerType === 'polygon' ? '#3388ff' : 
-                                    layerType === 'polyline' ? '#ff0000' :
-                                    layerType === 'point' ? '#ffb300' :
-                                    '#ffcc00'}; 
+                                    layerType === 'polyline' ? '#ff0000' : 
+                                    '#ff0000'}; 
                                     text-shadow: -1px -1px 0 #fff, 1px -1px 0 #fff, -1px 1px 0 #fff, 1px 1px 0 #fff;">${feature.properties[labelField]}</div>`,
                                 iconSize: [100, 20]
                             }),
                             interactive: false
                         });
                         
+                        // Determine which label layer to use based on feature type
+                        let targetLabelLayer;
                         if (layerType === 'polygon') {
-                            polygonLabelsLayer.addLayer(label);
+                            targetLabelLayer = polygonLabelsLayer;
                         } else if (layerType === 'polyline') {
-                            polylineLabelsLayer.addLayer(label);
+                            targetLabelLayer = polylineLabelsLayer;
                         } else {
-                            pointLabelsLayer.addLayer(label);
+                            targetLabelLayer = pointLabelsLayer;
+                        }
+                        
+                        // Store the label in the appropriate layer but don't add to map yet
+                        targetLabelLayer.addLayer(label);
+                        
+                        // Check if the corresponding toggle is checked
+                        const toggleId = layerType === 'polygon' ? 'polygon-labels-toggle' :
+                                       layerType === 'polyline' ? 'polyline-labels-toggle' :
+                                       'point-labels-toggle';
+                        
+                        // Add to map only if toggle is checked
+                        if (document.getElementById(toggleId)?.checked) {
+                            map.addLayer(targetLabelLayer);
                         }
                     }
                 }

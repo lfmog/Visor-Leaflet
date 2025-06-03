@@ -1,0 +1,169 @@
+body {
+    margin: 0;
+    padding: 0;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+#map {
+    width: 100%;
+    height: 100vh;
+}
+
+.control-panel {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    z-index: 1000;
+    background: white;
+    padding: 15px;
+    border-radius: 5px;
+    box-shadow: 0 0 10px rgba(0,0,0,0.2);
+    max-width: 300px;
+}
+
+.control-panel h3 {
+    margin-top: 0;
+    color: #333;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 5px;
+}
+
+.layer-control {
+    margin-bottom: 10px;
+}
+
+.layer-toggle {
+    display: flex;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.layer-toggle input {
+    margin-right: 10px;
+}
+
+.layer-toggle label {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    width: 100%;
+}
+
+.layer-color {
+    width: 15px;
+    height: 15px;
+    margin-right: 10px;
+    display: inline-block;
+    border-radius: 3px;
+}
+
+/* Layer specific colors */
+.polygon-color {
+    background: #3388ff;
+}
+
+.polyline1-color {
+    background: #ff0000;
+}
+
+.polyline2-color {
+    background: #00aa00;
+}
+
+.point-color {
+    background: #ffb300;
+}
+
+
+/* Label icons */
+.polygon-label-icon {
+    color: #3388ff;
+    margin-right: 10px;
+}
+
+.polyline-label-icon {
+    color: #ff0000;
+    margin-right: 10px;
+}
+
+.legend {
+    background: white;
+    padding: 10px;
+    border-radius: 5px;
+    box-shadow: 0 0 5px rgba(0,0,0,0.2);
+    line-height: 1.5;
+}
+
+.legend i {
+    width: 18px;
+    height: 18px;
+    float: left;
+    margin-right: 8px;
+    opacity: 0.7;
+    border-radius: 3px;
+}
+
+.info {
+    padding: 6px 8px;
+    font: 14px/16px Arial, Helvetica, sans-serif;
+    background: white;
+    background: rgba(255,255,255,0.8);
+    box-shadow: 0 0 15px rgba(0,0,0,0.2);
+    border-radius: 5px;
+}
+
+.info h4 {
+    margin: 0 0 5px;
+    color: #777;
+}
+
+
+/* Point label icon
+.point-label-icon {
+    color: #ff0000;
+    margin-right: 10px;
+} */
+
+/* Legend icon for points */
+.point-legend {
+    background: #ffb300;
+}
+
+/* CSS */
+.point-label-icon {
+    color: #ffb300;
+    margin-right: 10px;
+    transform: rotate(15deg);
+}
+
+.custom-fa-marker {
+    background: transparent !important;
+    border: none !important;
+}
+
+.custom-fa-marker i {
+    color: rgb(255, 174, 0);
+    font-size: 24px;
+    text-shadow: 0 0 3px white; /* Optional: adds white outline for better visibility */
+}
+
+.label-text {
+    font-size: 12px;
+    font-weight: bold;
+    text-shadow: -1px -1px 0 #fff, 1px -1px 0 #fff, -1px 1px 0 #fff, 1px 1px 0 #fff;
+    transform: translateX(-8px);
+    display: inline-block;
+}
+
+.custom-fa-marker {
+    background: transparent !important;
+    border: none !important;
+    text-align: center;
+}
+
+/* Remove any fixed font-size from CSS since we're controlling it via JS */
+.custom-fa-marker i {
+    color: rgb(255, 174, 0);
+    text-shadow: 0 0 3px white;
+    transition: font-size 0.2s ease; /* Smooth size transitions */
+}

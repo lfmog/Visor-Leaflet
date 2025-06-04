@@ -25,6 +25,8 @@ const polygonStyle = {
 };
 
 // Custom style for first polyline layer (vías principales)
+// Add this near your other style definitions
+
 const polyline1Style = {
     color: '#ff0000',
     weight: 3,
@@ -33,21 +35,13 @@ const polyline1Style = {
 
 // Custom style for second polyline layer (ríos)
 const polyline2Style = {
-    color: '#00aa00',
+    color: '#141414',
     weight: 2,
     opacity: 0.8,
-    dashArray: '5, 5'
 };
 
-// // Custom icon for point layer (postes)
-// const pointIcon = L.icon({
-//     iconUrl: 'https://cdn.jsdelivr.net/gh/pointhi/leaflet-color-markers@master/img/marker-icon-orange.png',
-//     shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
-//     iconSize: [25, 41],
-//     iconAnchor: [12, 41],
-//     popupAnchor: [1, -34],
-//     shadowSize: [41, 41]
-// });
+// Custom icon for point layer (postes)
+
 const pointIcon = L.divIcon({
     className: 'custom-fa-marker',  // Note the changed class name
     html: '<i class="fa-regular fa-flag"></i>',
@@ -66,69 +60,6 @@ const pointLayer = L.layerGroup().addTo(map);
 const polygonLabelsLayer = L.layerGroup()
 const polylineLabelsLayer = L.layerGroup()
 const pointLabelsLayer = L.layerGroup()
-
-
-// Function to load GeoJSON data
-// function loadGeoJSON(url, layer, style, labelField, layerType = 'polygon') {
-//     fetch(url)
-//         .then(response => response.json())
-//         .then(data => {
-//             // Clear previous data
-//             layer.clearLayers();
-            
-//             // Add new data with style
-//             const geoJsonLayer = L.geoJSON(data, {
-//                 pointToLayer: function(feature, latlng) {
-//                     if (layerType === 'point') {
-//                         return L.marker(latlng, { icon: pointIcon });
-//                     }
-//                     return L.circleMarker(latlng, style);
-//                 },
-//                 style: style,
-//                 onEachFeature: function(feature, layer) {
-//                     // Add popup with feature information
-//                     if (feature.properties) {
-//                         let popupContent = '<div class="info"><h4>Información</h4>';
-//                         for (const prop in feature.properties) {
-//                             popupContent += `<b>${prop}:</b> ${feature.properties[prop]}<br>`;
-//                         }
-//                         popupContent += '</div>';
-//                         layer.bindPopup(popupContent);
-//                     }
-                    
-//                     // Add label if labelField is provided
-//                     if (labelField && feature.properties && feature.properties[labelField]) {
-//                         const label = L.marker(layer.getBounds ? layer.getBounds().getCenter() : layer.getLatLng(), {
-//                             icon: L.divIcon({
-//                                 className: 'map-label',
-//                                 html: `<div class="label-text" style="font-size: 12px; font-weight: bold; color: ${
-//                                     layerType === 'polygon' ? '#3388ff' : 
-//                                     layerType === 'polyline' ? '#ff0000' :
-//                                     layerType === 'point' ? '#ffb300' :
-//                                     '#ffcc00'}; 
-//                                     text-shadow: -1px -1px 0 #fff, 1px -1px 0 #fff, -1px 1px 0 #fff, 1px 1px 0 #fff;">${feature.properties[labelField]}</div>`,
-//                                 iconSize: [100, 20]
-//                             }),
-//                             interactive: false
-//                         });
-                        
-//                         if (layerType === 'polygon') {
-//                             polygonLabelsLayer.addLayer(label);
-//                         } else if (layerType === 'polyline') {
-//                             polylineLabelsLayer.addLayer(label);
-//                         } else {
-//                             pointLabelsLayer.addLayer(label);
-//                         }
-//                     }
-//                 }
-//             });
-            
-//             layer.addLayer(geoJsonLayer);
-//         })
-//         .catch(error => {
-//             console.error('Error loading GeoJSON:', error);
-//         });
-// }
 
 // -------------------------------------------------------------------------------
 // Remove the static pointIcon constant and replace with a dynamic function
@@ -253,12 +184,12 @@ loadGeoJSON('geojs/Veredas300.geojson',
            polygonLayer, polygonStyle, 'NOMBRE_VER', 'polygon');
 
 // First polyline layer (e.g., main roads)
-loadGeoJSON('geojs/Red_TGI.geojson', 
+loadGeoJSON('geojs/Ducto_Turno4_Adicional.geojson', 
            polyline1Layer, polyline1Style, 'TRAMO', 'polyline');
 
 // Second polyline layer (e.g., rivers)
-loadGeoJSON('https://raw.githubusercontent.com/john-guerra/colombia_maps/master/rivers.geojson', 
-           polyline2Layer, polyline2Style, 'name', 'polyline');
+loadGeoJSON('geojs/Red_TGI.geojson', 
+           polyline2Layer, polyline2Style, 'TRAMO', 'polyline');
 
 // Point layer (e.g., postes)
 loadGeoJSON('geojs/Postes.geojson', 
@@ -333,10 +264,11 @@ legend.onAdd = function(map) {
     const div = L.DomUtil.create('div', 'legend');
     div.innerHTML = `
         <h4>Leyenda</h4>
-        <div><i class="legend-icon polygon-legend"></i> Zonas (Polígonos)</div>
+        <div><i class="fa-solid fa-square" style="color: #74C0FC;"></i> Veredas </div>
         <div><i class="legend-icon polyline1-legend"></i> Vías principales</div>
-        <div><i class="legend-icon polyline2-legend"></i> Ríos</div>
-        <div><i class="legend-icon point-legend"></i> Postes</div>
+        <div><i class="fa-solid fa-arrow-trend-down" style="color: #f70202;"></i> Ríosss</div>
+        <div><i class="fa-regular fa-flag"></i> Postes</div>
+        
     `;
     return div;
 };

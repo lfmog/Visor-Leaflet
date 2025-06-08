@@ -36,37 +36,54 @@
                 </label>
             </div>
         </div>
-        
+
         <h3><i class="fas fa-layer-group"></i> Capas</h3>
         
         <div class="layer-control">
             <h4>Mostrar/ocultar capas</h4>`
+
             <div class="layer-toggle">
-                <input type="checkbox" id="polygon-layer-toggle" checked>
-                <label for="polygon-layer-toggle">
-                    <span class="layer-color polygon-color"></span>
-                    Veredas
+                <input type="checkbox" id="point-layer-toggle" checked>
+                <label for="point-layer-toggle">
+                    <span class="layer-color point-color"></span>
+                    Postes
                 </label>
             </div>
+            
             <div class="layer-toggle">
                 <input type="checkbox" id="polyline1-layer-toggle" checked>
                 <label for="polyline1-layer-toggle">
                     <span class="layer-color polyline1-color"></span>
-                    Red TGI
+                    DUCTO C1
                 </label>
             </div>
             <div class="layer-toggle">
                 <input type="checkbox" id="polyline2-layer-toggle" checked>
                 <label for="polyline2-layer-toggle">
                     <span class="layer-color polyline2-color"></span>
-                    Ducto
+                    DUCTO C2
                 </label>
             </div>
             <div class="layer-toggle">
-                <input type="checkbox" id="point-layer-toggle" checked>
-                <label for="point-layer-toggle">
-                    <span class="layer-color point-color"></span>
-                    Postes
+                <input type="checkbox" id="polyline3-layer-toggle" checked>
+                <label for="polyline3-layer-toggle">
+                    <span class="layer-color polyline3-color"></span>
+                    DUCTO C3
+                </label>
+            </div>
+            <div class="layer-toggle">
+                <input type="checkbox" id="polyline4-layer-toggle" checked>
+                <label for="polyline4-layer-toggle">
+                    <span class="layer-color polyline4-color"></span>
+                    DUCTO C4
+                </label>
+            </div>
+        
+            <div class="layer-toggle">
+                <input type="checkbox" id="polygon-layer-toggle" checked>
+                <label for="polygon-layer-toggle">
+                    <span class="layer-color polygon-color"></span>
+                    Veredas
                 </label>
             </div> 
         </div>
@@ -74,10 +91,12 @@
         <div class="layer-control">
             <h4>Mostrar/ocultar etiquetas</h4>
             <div class="layer-toggle">
-                <input type="checkbox" id="polygon-labels-toggle">
-                <label for="polygon-labels-toggle">
-                    <i class="fas fa-tag polygon-label-icon"></i>
-                    Veredas
+                <input type="checkbox" id="point-labels-toggle">
+                <label for="point-labels-toggle">
+                    <i class="fa-regular fa-flag point-label-icon"></i>
+                    <!-- <i class="fas fa-map-marker-alt point-label-icon"></i> -->
+                    <!-- <span class="point-label-icon"></span> -->
+                    Etiquetas de Postes
                 </label>
             </div>
             <div class="layer-toggle">
@@ -88,12 +107,10 @@
                 </label>
             </div>
             <div class="layer-toggle">
-                <input type="checkbox" id="point-labels-toggle">
-                <label for="point-labels-toggle">
-                    <i class="fa-regular fa-flag point-label-icon"></i>
-                    <!-- <i class="fas fa-map-marker-alt point-label-icon"></i> -->
-                    <!-- <span class="point-label-icon"></span> -->
-                    Etiquetas de Postes
+                <input type="checkbox" id="polygon-labels-toggle">
+                <label for="polygon-labels-toggle">
+                    <i class="fas fa-tag polygon-label-icon"></i>
+                    Veredas
                 </label>
             </div>
         </div>

@@ -193,26 +193,26 @@ map.on('zoomend', function() {
 // Load sample data (replace with your actual GeoJSON files)
 
 // Point layer (e.g., postes)
-loadGeoJSON('geojs/Postes.geojson', 
+loadGeoJSON('geojs/Puntos.geojson', 
            pointLayer, {color: '#ff0000'}, 'PK', 'point');
 
 // First polyline layer (e.g., main roads)
-loadGeoJSON('geojs/Ducto_C1.geojson', 
+loadGeoJSON('geojs/Linea_C1.geojson', 
            polyline1Layer, polyline1Style, 'TRAMO', 'polyline');
 
-loadGeoJSON('geojs/Ducto_C2.geojson', 
+loadGeoJSON('geojs/Linea_C2.geojson', 
            polyline2Layer, polyline2Style, 'TRM_RML', 'polyline');
 
 // Third polyline layer (e.g., rivers)
-loadGeoJSON('geojs/Ducto C3.geojson', 
+loadGeoJSON('geojs/Linea C3.geojson', 
            polyline3Layer, polyline3Style, 'TRM_RML', 'polyline');
 
 // Fourth layer (e.g., rivers)
-loadGeoJSON('geojs/Ducto_Turno4_Adicional.geojson', 
+loadGeoJSON('geojs/Linea_Turno4_Adicional.geojson', 
            polyline4Layer, polyline4Style, 'TRM_RML', 'polyline');
 
 // Polygon layer (e.g., departments of Colombia)
-loadGeoJSON('geojs/Veredas300.geojson', 
+loadGeoJSON('geojs/Poligon.geojson', 
            polygonLayer, polygonStyle, 'NOMBRE_VER', 'polygon');
 
 
@@ -285,7 +285,6 @@ document.getElementById('polyline-labels-toggle').addEventListener('change', fun
     }
 });
 
-// Add this event listener for polygon labels
 document.getElementById('polygon-labels-toggle').addEventListener('change', function(e) {
     if (e.target.checked) {
         map.addLayer(polygonLabelsLayer);
@@ -306,10 +305,10 @@ legend.onAdd = function(map) {
     div.innerHTML = `
         <h4>Leyenda</h4>
         <div><i class="fa-solid fa-square" style="color: #74C0FC;"></i> Veredas </div>
-        <div><i class="legend-icon polyline1-legend"></i> Ducto C1</div>
-        <div><i class="legend-icon polyline2-legend"></i> Ducto C2</div>
-        <div><i class="legend-icon polyline3-legend"></i> Ducto C3</div>
-        <div><i class="legend-icon polyline4-legend"></i> Ducto C4</div>
+        <div><i class="legend-icon polyline1-legend"></i> Linea C1</div>
+        <div><i class="legend-icon polyline2-legend"></i> Linea C2</div>
+        <div><i class="legend-icon polyline3-legend"></i> Linea C3</div>
+        <div><i class="legend-icon polyline4-legend"></i> Linea C4</div>
         <div><i class="fa-solid fa-arrow-trend-down" style="color: #f70202;"></i> Ríosss</div>
         <div><i class="fa-regular fa-flag"></i> Postes</div>
         

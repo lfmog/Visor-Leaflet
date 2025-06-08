@@ -59,25 +59,33 @@ body {
 
 /* Layer specific colors */
 .polygon-color {
-    background: #3388ff;
+    background: #EDED0E;
 }
 
 .polyline1-color {
-    background: #ff0000;
+    background: #DE1414;
 }
 
 .polyline2-color {
-    background: #141414;
+    background: #5CEE0E;
+}
+
+.polyline3-color {
+    background: #EE0ECC;
+}
+
+.polyline4-color {
+    background: #0E30EE;
 }
 
 .point-color {
-    background: #ffb300;
+    background: #EE0ECC;
 }
 
 
 /* Label icons */
 .polygon-label-icon {
-    color: #3388ff;
+    color: #EDED0E;
     margin-right: 10px;
 }
 

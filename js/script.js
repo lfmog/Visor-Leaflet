@@ -24,13 +24,15 @@ const pointIcon = L.divIcon({
     className: 'custom-fa-marker',  // Note the changed class name
     html: '<i class="fa-regular fa-flag"></i>',
     iconSize: [20, 20],            // Slightly larger for better visibility
-    iconAnchor: [10, 10]           // Center anchor
+    iconAnchor: [10, 10],           // Center anchor
+    pane: 'points'
 });
 
 const polyline1Style = {
     color: '#DE1414',
     weight: 4,
-    opacity: 0.8
+    opacity: 0.8,
+    pane: 'polylines'
 };
 
 // Custom style for second polyline layer (C2)
@@ -38,18 +40,21 @@ const polyline2Style = {
     color: '#5CEE0E',
     weight: 4,
     opacity: 0.8,
+    pane: 'polylines'
 };
 
 const polyline3Style = {
     color: '#EE0ECC',
     weight: 4,
     opacity: 0.8,
+    pane: 'polylines'
 };
 
 const polyline4Style = {
     color: '#0E30EE',
     weight: 4,
     opacity: 0.8,
+    pane: 'polylines'
 };
 
 // Custom style for polygon layer
@@ -57,8 +62,9 @@ const polygonStyle = {
     fillColor: '#EDED0E',
     weight: 1,
     opacity: 1,
-    color: '#EDED0E',
-    fillOpacity: 0.4
+    color: '#EDBD0E',
+    fillOpacity: 0.6,
+    pane: 'polygons'  // for order control
 };
 
 // Create layer groups
@@ -73,6 +79,15 @@ const pointLabelsLayer = L.layerGroup()
 const polylineLabelsLayer = L.layerGroup()
 const polygonLabelsLayer = L.layerGroup()
 
+// Create panes for explicit z-index control
+map.createPane('polygons');
+map.createPane('polylines');
+map.createPane('points');
+
+// Set z-index values (higher numbers appear above lower numbers)
+map.getPane('polygons').style.zIndex = 200;
+map.getPane('polylines').style.zIndex = 400;
+map.getPane('points').style.zIndex = 600;
 // -------------------------------------------------------------------------------
 // Remove the static pointIcon constant and replace with a dynamic function
 function getPointIcon(zoomLevel) {
@@ -118,7 +133,9 @@ function loadGeoJSON(url, layer, style, labelField, layerType = 'polygon') {
             const geoJsonLayer = L.geoJSON(data, {
                 pointToLayer: function(feature, latlng) {
                     if (layerType === 'point') {
-                        return L.marker(latlng, { icon: pointIcon });
+                        return L.marker(latlng, { icon: pointIcon,
+                            pane: 'points'
+                         });
                     }
                     return L.circleMarker(latlng, style);
                 },

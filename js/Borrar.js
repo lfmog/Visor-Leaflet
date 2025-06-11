@@ -316,4 +316,205 @@ legend.onAdd = function(map) {
     return div;
 };
 
+// Measurement tool implementation
+
+let measureControl = {
+    isMeasuring: false,
+    currentPolyline: null,
+    totalDistance: 0,
+    measurePoints: [],
+    measureTooltips: [],
+
+    start: function() {
+        // Clear any previous measurements
+        this.clearMeasurement();
+        
+        this.isMeasuring = true;
+        document.getElementById('measure-toggle').classList.add('active');
+        document.getElementById('measure-result').style.display = 'block';
+        document.getElementById('measure-value').textContent = '0';
+        
+        // Start with first click
+        map.on('click', this.handleMeasureClick);
+    },
+
+    stop: function() {
+        this.isMeasuring = false;
+        document.getElementById('measure-toggle').classList.remove('active');
+        document.getElementById('measure-result').style.display = 'none';
+        map.off('click', this.handleMeasureClick);
+        this.clearMeasurement();
+    },
+
+    handleMeasureClick: function(e) {
+        if (!measureControl.isMeasuring) return;
+        
+        // Add point to current measurement
+        measureControl.measurePoints.push(e.latlng);
+        
+        // Update or create polyline
+        if (measureControl.measurePoints.length > 1) {
+            if (!measureControl.currentPolyline) {
+                measureControl.currentPolyline = L.polyline([], {
+                    color: 'red',
+                    weight: 3
+                }).addTo(map);
+            }
+            measureControl.currentPolyline.setLatLngs(measureControl.measurePoints);
+            
+            // Calculate and display distance
+            const lastSegmentDistance = measureControl.measurePoints[measureControl.measurePoints.length-2]
+                .distanceTo(measureControl.measurePoints[measureControl.measurePoints.length-1]) / 1000;
+            measureControl.totalDistance += lastSegmentDistance;
+            
+            document.getElementById('measure-value').textContent = measureControl.totalDistance.toFixed(2);
+            
+            // Add tooltip for this segment
+            const tooltip = L.tooltip({
+                permanent: true,
+                direction: 'top',
+                className: 'measure-tooltip',
+                content: `${lastSegmentDistance.toFixed(2)} km<br>Total: ${measureControl.totalDistance.toFixed(2)} km`
+            }).setLatLng(e.latlng);
+            
+            tooltip.addTo(map);
+            measureControl.measureTooltips.push(tooltip);
+        }
+    },
+
+    clearMeasurement: function() {
+        // Remove existing polyline
+        if (this.currentPolyline) {
+            map.removeLayer(this.currentPolyline);
+            this.currentPolyline = null;
+        }
+        
+        // Remove all tooltips
+        this.measureTooltips.forEach(tooltip => map.removeLayer(tooltip));
+        this.measureTooltips = [];
+        
+        // Reset measurements
+        this.measurePoints = [];
+        this.totalDistance = 0;
+    }
+};
+
+// Toggle measurement tool
+document.getElementById('measure-toggle').addEventListener('click', function() {
+    if (measureControl.isMeasuring) {
+        measureControl.stop();
+    } else {
+        measureControl.start();
+    }
+});
+
+// Add right-click to finish measurement
+map.on('contextmenu', function() {
+    if (measureControl.isMeasuring) {
+        measureControl.stop();
+    }
+});
+
+// Search tool implementation
+const searchControl = {
+    search: function() {
+        const query = document.getElementById('search-input').value.trim().toLowerCase();
+        const resultsContainer = document.getElementById('search-results');
+        resultsContainer.innerHTML = '';
+        
+        if (!query) {
+            resultsContainer.style.display = 'none';
+            return;
+        }
+        
+        console.log(`Searching for: "${query}"`); // Debug log
+        
+        const searchableLayers = [
+            { layer: polygonLayer, type: 'Polygon' },
+            { layer: polyline1Layer, type: 'Line C1' },
+            { layer: polyline2Layer, type: 'Line C2' },
+            { layer: polyline3Layer, type: 'Line C3' },
+            { layer: polyline4Layer, type: 'Line C4' },
+            { layer: pointLayer, type: 'Point' }
+        ];
+        
+        let foundResults = false;
+        
+        searchableLayers.forEach(layerInfo => {
+            const layers = layerInfo.layer.getLayers();
+            console.log(`Checking ${layerInfo.type} layer with ${layers.length} features`);
+            
+            layers.forEach(featureLayer => {
+                if (featureLayer.feature && featureLayer.feature.properties) {
+                    const props = featureLayer.feature.properties;
+                    console.log("Available properties:", Object.keys(props)); // Debug log
+                    
+                    for (const prop in props) {
+                        const value = String(props[prop]).toLowerCase();
+                        if (value.includes(query)) {
+                            foundResults = true;
+                            console.log(`Match found: ${prop} = ${props[prop]}`); // Debug log
+                            
+                            const resultItem = document.createElement('div');
+                            resultItem.className = 'search-result-item';
+                            resultItem.innerHTML = `
+                                <strong>${layerInfo.type}</strong><br>
+                                <small><b>${prop}:</b> ${props[prop]}</small>
+                            `;
+                            
+                            resultItem.addEventListener('click', () => {
+                                this.zoomToFeature(featureLayer);
+                                if (featureLayer.openPopup) {
+                                    featureLayer.openPopup();
+                                }
+                            });
+                            
+                            resultsContainer.appendChild(resultItem);
+                        }
+                    }
+                }
+            });
+        });
+        
+        resultsContainer.style.display = foundResults ? 'block' : 'none';
+        
+        if (!foundResults) {
+            const noResults = document.createElement('div');
+            noResults.className = 'search-result-item';
+            noResults.textContent = 'No results found';
+            resultsContainer.appendChild(noResults);
+            resultsContainer.style.display = 'block';
+        }
+    },
+    
+    zoomToFeature: function(featureLayer) {
+        if (featureLayer.getBounds) {
+            // For polygons/polylines
+            map.fitBounds(featureLayer.getBounds(), { 
+                padding: [50, 50],
+                maxZoom: 17
+            });
+        } else if (featureLayer.getLatLng) {
+            // For points
+            map.setView(featureLayer.getLatLng(), 17);
+        }
+    }
+};
+
+// Event listeners with better error handling
+document.getElementById('search-btn').addEventListener('click', () => {
+    try {
+        searchControl.search();
+    } catch (error) {
+        console.error("Search error:", error);
+        alert("Search failed. Check console for details.");
+    }
+});
+
+document.getElementById('search-input').addEventListener('keyup', (e) => {
+    if (e.key === 'Enter') {
+        searchControl.search();
+    }
+});
+
 legend.addTo(map);

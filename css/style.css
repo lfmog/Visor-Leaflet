@@ -79,7 +79,7 @@ body {
 }
 
 .point-color {
-    background: #EE0ECC;
+    background: #EE8C0B;
 }
 
 
@@ -139,9 +139,9 @@ body {
 
 /* CSS */
 .point-label-icon {
-    color: #ffb300;
-    margin-right: 10px;
-    transform: rotate(15deg);
+    color: #EE8C0B;
+    margin-right: 15px;
+    transform: rotate(0 deg);
 }
 
 .custom-fa-marker {
@@ -150,8 +150,8 @@ body {
 }
 
 .custom-fa-marker i {
-    color: rgb(255, 174, 0);
-    font-size: 24px;
+    color: #EE8C0B;
+    font-size: 15px;
     text-shadow: 0 0 3px white; /* Optional: adds white outline for better visibility */
 }
 
@@ -171,7 +171,7 @@ body {
 
 /* Remove any fixed font-size from CSS since we're controlling it via JS */
 .custom-fa-marker i {
-    color: rgb(255, 174, 0);
+    color: #EE8C0B;
     text-shadow: 0 0 3px white;
     transition: font-size 0.2s ease; /* Smooth size transitions */
 }
@@ -198,3 +198,192 @@ input[type="radio"] {
     text-align: center;
     color: #555;
 }
+
+/* Measurement tool styles */
+.leaflet-measure-path {
+    stroke: #FF0000;
+    stroke-width: 2;
+    fill: none;
+}
+
+.measure-tooltip {
+    background: rgba(255, 255, 255, 0.8);
+    border: 1px solid #999;
+    border-radius: 3px;
+    padding: 2px 5px;
+    font-size: 12px;
+}
+.measure-tooltip {
+    background: rgba(255, 255, 255, 0.9);
+    border: 2px solid #FF0000;
+    border-radius: 4px;
+    padding: 4px 8px;
+    font-size: 12px;
+    font-weight: bold;
+    color: #333;
+}
+
+.leaflet-measure-path {
+    stroke: #FF0000;
+    stroke-width: 3;
+    stroke-opacity: 0.8;
+    fill: none;
+    stroke-dasharray: 5, 5;
+}
+
+#measure-result {
+    background: white;
+    padding: 5px;
+    border-radius: 4px;
+    border: 1px solid #ccc;
+    margin-top: 5px;
+}
+
+#measure-value {
+    font-weight: bold;
+    color: #FF0000;
+}
+
+/* Search tool styles */
+/* Enhanced search tool styles */
+.search-container {
+    position: relative;
+    margin-bottom: 10px;
+}
+
+#search-input {
+    width: 100%;
+    padding: 8px 30px 8px 10px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+
+#search-btn {
+    position: absolute;
+    right: 0;
+    top: 0;
+    height: 100%;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+}
+
+#search-results {
+    position: absolute;
+    z-index: 1000;
+    background: white;
+    width: 100%;
+    max-height: 300px;
+    overflow-y: auto;
+    border: 1px solid #ddd;
+    border-radius: 0 0 4px 4px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    display: none;
+}
+
+.search-result-item {
+    padding: 8px 10px;
+    border-bottom: 1px solid #eee;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.search-result-item:hover {
+    background-color: #f5f5f5;
+}
+
+.search-result-item small {
+    color: #666;
+    font-size: 0.9em;
+}
+
+.search-result-item strong {
+    color: #333;
+}
+
+/* Add Show Coordinate-display */
+/* Main layout */
+/* Bottom panel layout */
+/* Main layout */
+body {
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+}
+
+#map {
+    flex: 1;
+    width: 100%;
+}
+
+#bottom-panel {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #f5f5f5;
+    border-top: 1px solid #ddd;
+    padding: 10px;
+    box-shadow: 0 -2px 5px rgba(0,0,0,0.1);
+}
+
+/* Control Panel */
+#control-panel {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+    align-items: flex-start;
+}
+
+.control-section {
+    background: white;
+    padding: 10px;
+    border-radius: 5px;
+    box-shadow: 0 0 5px rgba(0,0,0,0.1);
+    margin-right: 10px;
+}
+
+/* Coordinate Display */
+#coordinate-display-container {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+#coordinate-display {
+    background: rgba(255, 255, 255, 0.9);
+    padding: 5px 10px;
+    border-radius: 3px;
+    border: 1px solid #ccc;
+    font-family: monospace;
+    font-size: 14px;
+    min-width: 220px;
+    text-align: center;
+}
+
+@media (max-width: 768px) {
+    #bottom-panel {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    #control-panel {
+        flex-direction: column;
+        gap: 10px;
+    }
+    
+    .control-section {
+        margin-right: 0;
+        margin-bottom: 10px;
+    }
+    
+    #coordinate-display-container {
+        margin-top: 10px;
+        justify-content: center;
+    }
+}
+
+/* Keep all your existing control styles */
+/* ... your existing control button, toggle styles ... */
+

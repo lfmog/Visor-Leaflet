@@ -13,13 +13,34 @@
     
     <!-- Custom CSS -->
     <link rel="stylesheet" href="css/style.css">
+
+
 </head>
 <body>
     <div id="map"></div>
     
     <div class="control-panel">
         <h3><i class="fas fa-layer-group"></i> Capas</h3>
-        
+        <!-- Add measure tool -->
+        <div class="control-section">
+            <button id="measure-toggle" class="control-btn" title="Click to measure, right-click to finish">
+                <i class="fas fa-ruler"></i> Medir Distancia
+            </button>
+            <div id="measure-result" style="display: none;">
+                <span>Distancia total:</span> <span id="measure-value">0</span> km
+            </div>
+        </div>
+
+
+        <!-- Add Search Tool -->
+<!--         <div class="control-section">
+            <div class="search-container">
+                <input type="text" id="search-input" placeholder="Buscar por nombre, tipo...">
+                <button id="search-btn"><i class="fas fa-search"></i></button>
+            </div>
+            <div id="search-results"></div>
+        </div> -->
+
         <!-- Base Map Toggle -->
         <div class="control-section">
             <h4>Mapa Base</h4>
@@ -46,7 +67,7 @@
                 <input type="checkbox" id="point-layer-toggle" checked>
                 <label for="point-layer-toggle">
                     <span class="layer-color point-color"></span>
-                    Postes
+                    Edificaciones
                 </label>
             </div>
             
@@ -54,28 +75,28 @@
                 <input type="checkbox" id="polyline1-layer-toggle" checked>
                 <label for="polyline1-layer-toggle">
                     <span class="layer-color polyline1-color"></span>
-                    DUCTO C1
+                    Ducto C1
                 </label>
             </div>
             <div class="layer-toggle">
                 <input type="checkbox" id="polyline2-layer-toggle" checked>
                 <label for="polyline2-layer-toggle">
                     <span class="layer-color polyline2-color"></span>
-                    DUCTO C2
+                    Ducto C2
                 </label>
             </div>
             <div class="layer-toggle">
                 <input type="checkbox" id="polyline3-layer-toggle" checked>
                 <label for="polyline3-layer-toggle">
                     <span class="layer-color polyline3-color"></span>
-                    DUCTO C3
+                    Ducto C3
                 </label>
             </div>
             <div class="layer-toggle">
                 <input type="checkbox" id="polyline4-layer-toggle" checked>
                 <label for="polyline4-layer-toggle">
                     <span class="layer-color polyline4-color"></span>
-                    DUCTO C4
+                    Ducto C4
                 </label>
             </div>
         
@@ -93,7 +114,7 @@
             <div class="layer-toggle">
                 <input type="checkbox" id="point-labels-toggle">
                 <label for="point-labels-toggle">
-                    <i class="fa-regular fa-flag point-label-icon"></i>
+                    <i class="fa-regular fa-plus point-label-icon"></i>
                     <!-- <i class="fas fa-map-marker-alt point-label-icon"></i> -->
                     <!-- <span class="point-label-icon"></span> -->
                     Etiquetas de Postes
@@ -115,6 +136,20 @@
             </div>
         </div>
     </div>
+<!-- Add Show Coordinate-display -->
+<!-- Coordinate Display (will stay in bottom right) -->
+    <div id="coordinate-display-container">
+        <div id="coordinate-display">
+            <span id="latitude">0°00'00.00"N</span>, 
+            <span id="longitude">0°00'00.00"W</span>
+        </div>
+        <select id="coord-format" class="format-selector">
+            <option value="dms">DMS (4°00'00.00"N)</option>
+            <option value="decimal">Decimal (4.000000°)</option>
+        </select>
+    </div>
+    <!-- Your map container -->
+
 
     <!-- Leaflet JS -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>

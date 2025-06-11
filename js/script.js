@@ -1,6 +1,20 @@
 // Initialize the map centered on Colombia
 const map = L.map('map').setView([4.5709, -74.2973], 6);
 
+// Mobile detection and adjustments
+const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
+if (isMobile) {
+    // Adjust view for mobile
+    map.setZoom(map.getZoom() - 1); // Zoom out slightly
+    map.tap?.disable(); // Disable tap delay if plugin exists
+    
+    // Optimize touch controls
+    map.dragging.enable();
+    map.touchZoom.enable();
+    map.doubleClickZoom.disable();
+}
+
 // Add base map - Using OpenStreetMap as base
 // Define base maps
 const baseMaps = {
@@ -15,7 +29,15 @@ const baseMaps = {
 // Add default base map
 baseMaps["OpenStreetMap"].addTo(map);
 
-
+// Touch device optimizations
+if ('ontouchstart' in window) {
+    // Increase hit area for touch devices
+    L.DomUtil.addClass(map._container, 'leaflet-touch');
+    
+    // Adjust interaction thresholds
+    map.options.tapTolerance = 15;
+    map.options.touchZoom = 'center';
+}
 // Custom style for first polyline layer (vías principales)
 // Add this near your other style definitions
 
@@ -235,6 +257,31 @@ loadGeoJSON('geojs/VeredasT5.geojson',
 
 // Layer control toggles
 
+// ------------------------------------
+function setupResponsiveControls() {
+    const controlsContainer = document.getElementById('control-panel');
+    
+    if (isMobile) {
+        // Create mobile-friendly accordion
+        controlsContainer.innerHTML = `
+            <div class="mobile-accordion">
+                <button class="accordion-btn">Capas <i class="fas fa-chevron-down"></i></button>
+                <div class="accordion-content">
+                    <!-- Your existing control toggles will be injected here -->
+                </div>
+            </div>
+        `;
+        
+        // Add accordion behavior
+        document.querySelector('.accordion-btn').addEventListener('click', function() {
+            this.classList.toggle('active');
+            const content = this.nextElementSibling;
+            content.style.display = content.style.display === 'block' ? 'none' : 'block';
+        });
+    }
+
+// -----------------------------------
+
 document.getElementById('point-layer-toggle').addEventListener('change', function(e) {
     if (e.target.checked) {
         map.addLayer(pointLayer);
@@ -311,7 +358,8 @@ document.getElementById('polygon-labels-toggle').addEventListener('change', func
     }
 });
 
-
+}
+setTimeout(setupResponsiveControls, 1000);
 /* // Add scale control
 L.control.scale({position: 'bottomleft'}).addTo(map);
 
@@ -585,5 +633,26 @@ document.getElementById('search-input').addEventListener('keyup', (e) => {
         searchControl.search();
     }
 }); */
+
+// ==============================================
+// Dynamic viewport adjustment
+function handleResize() {
+    if (window.innerWidth <= 768) {
+        // Mobile layout
+        document.getElementById('coordinate-container').style.flexDirection = 'column';
+        document.getElementById('control-panel').classList.add('mobile-view');
+    } else {
+        // Desktop layout
+        document.getElementById('coordinate-container').style.flexDirection = 'row';
+        document.getElementById('control-panel').classList.remove('mobile-view');
+    }
+}
+
+// Initial check
+handleResize();
+
+// Update on resize
+window.addEventListener('resize', handleResize);
+// ==============================================
 
 legend.addTo(map);

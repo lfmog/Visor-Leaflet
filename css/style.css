@@ -384,6 +384,88 @@ body {
     }
 }
 
-/* Keep all your existing control styles */
-/* ... your existing control button, toggle styles ... */
 
+/* Mobile-specific styles */
+@media (max-width: 768px) {
+    /* Map container */
+    #map {
+        height: 70vh !important; /* Leaves space for controls */
+    }
+
+    /* Bottom panel */
+    #bottom-panel {
+        height: 30vh;
+        overflow-y: auto;
+        flex-direction: column;
+        padding: 8px;
+    }
+
+    /* Control panel */
+    #control-panel {
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .control-section {
+        width: 100%;
+        margin-bottom: 8px;
+        padding: 8px;
+    }
+
+    /* Coordinate display */
+    #coordinate-container {
+        position: relative;
+        right: auto;
+        bottom: auto;
+        margin-top: 10px;
+        width: 100%;
+        justify-content: center;
+    }
+
+    /* Layer toggles */
+    .layer-toggle {
+        font-size: 14px;
+    }
+
+    /* Measurement tool */
+    #measure-result {
+        font-size: 12px;
+    }
+
+    /* Legend */
+    .legend {
+        font-size: 12px;
+        padding: 5px;
+    }
+}
+
+/* Mobile Styles */
+@media (max-width: 768px) {
+    /* Map container */
+    #map {
+        height: 60vh !important;
+    }
+
+    /* Control panel */
+    #control-panel {
+        height: 40vh;
+        overflow-y: auto;
+    }
+
+    /* Touch-friendly elements */
+    .control-btn, .layer-toggle label {
+        min-height: 44px;
+        min-width: 44px;
+        padding: 12px;
+    }
+
+    /* Accordion styles */
+    .mobile-accordion .accordion-content {
+        display: none;
+        padding: 10px;
+    }
+    
+    .mobile-accordion .active + .accordion-content {
+        display: block;
+    }
+}

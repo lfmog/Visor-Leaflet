@@ -1,9 +1,46 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Visor GIS Colombia</title>
+    <html lang="es">
+    <style>
+        /* Base styles */
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', sans-serif;
+            font-size: 16px;
+        }
+        
+        #map {
+            height: 100vh;
+            width: 100%;
+        }
+        
+        /* Mobile overrides */
+        @media (max-width: 768px) {
+            body {
+                font-size: 14px;
+            }
+            
+            #map {
+                height: 60vh !important;
+            }
+            
+            #bottom-panel {
+                height: 40vh;
+                overflow-y: auto;
+            }
+            
+            .control-btn {
+                min-height: 44px;
+                min-width: 44px;
+            }
+        }
+    </style>
     
     <!-- Leaflet CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />

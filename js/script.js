@@ -1,5 +1,5 @@
 // Initialize the map centered on Colombia
-const map = L.map('map').setView([4.5709, -74.2973], 6);
+const map = L.map('map').setView([3.337169000000074, -75.2232203], 10);
 
 // Add base map - Using OpenStreetMap as base
 // Define base maps

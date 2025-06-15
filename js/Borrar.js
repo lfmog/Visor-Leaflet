@@ -16,21 +16,20 @@ const baseMaps = {
 baseMaps["OpenStreetMap"].addTo(map);
 
 
-// Custom style for first polyline layer (vías principales)
-// Add this near your other style definitions
-
 // Custom icon for point layer (postes)
 const pointIcon = L.divIcon({
     className: 'custom-fa-marker',  // Note the changed class name
-    html: '<i class="fa-regular fa-flag"></i>',
+    html: '<i class="fa-regular fa-plus"></i>',
     iconSize: [20, 20],            // Slightly larger for better visibility
-    iconAnchor: [10, 10]           // Center anchor
+    iconAnchor: [10, 10],           // Center anchor
+    pane: 'points'
 });
 
 const polyline1Style = {
     color: '#DE1414',
     weight: 4,
-    opacity: 0.8
+    opacity: 0.8,
+    pane: 'polylines'
 };
 
 // Custom style for second polyline layer (C2)
@@ -38,18 +37,21 @@ const polyline2Style = {
     color: '#5CEE0E',
     weight: 4,
     opacity: 0.8,
+    pane: 'polylines'
 };
 
 const polyline3Style = {
     color: '#EE0ECC',
     weight: 4,
     opacity: 0.8,
+    pane: 'polylines'
 };
 
 const polyline4Style = {
     color: '#0E30EE',
     weight: 4,
     opacity: 0.8,
+    pane: 'polylines'
 };
 
 // Custom style for polygon layer
@@ -57,8 +59,9 @@ const polygonStyle = {
     fillColor: '#EDED0E',
     weight: 1,
     opacity: 1,
-    color: '#EDED0E',
-    fillOpacity: 0.4
+    color: '#EDBD0E',
+    fillOpacity: 0.3,
+    pane: 'polygons'  // for order control
 };
 
 // Create layer groups
@@ -73,6 +76,15 @@ const pointLabelsLayer = L.layerGroup()
 const polylineLabelsLayer = L.layerGroup()
 const polygonLabelsLayer = L.layerGroup()
 
+// Create panes for explicit z-index control
+map.createPane('polygons');
+map.createPane('polylines');
+map.createPane('points');
+
+// Set z-index values (higher numbers appear above lower numbers)
+map.getPane('polygons').style.zIndex = 200;
+map.getPane('polylines').style.zIndex = 400;
+map.getPane('points').style.zIndex = 600;
 // -------------------------------------------------------------------------------
 // Remove the static pointIcon constant and replace with a dynamic function
 function getPointIcon(zoomLevel) {
@@ -82,7 +94,7 @@ function getPointIcon(zoomLevel) {
     
     return L.divIcon({
         className: 'custom-fa-marker',
-        html: `<i class="fa-regular fa-flag" style="font-size: ${size}px;"></i>`,
+        html: `<i class="fa-regular fa-plus" style="font-size: ${size}px;"></i>`,
         iconSize: [size, size],
         iconAnchor: [size/2, size/2],
         popupAnchor: [0, -size/2]
@@ -118,7 +130,9 @@ function loadGeoJSON(url, layer, style, labelField, layerType = 'polygon') {
             const geoJsonLayer = L.geoJSON(data, {
                 pointToLayer: function(feature, latlng) {
                     if (layerType === 'point') {
-                        return L.marker(latlng, { icon: pointIcon });
+                        return L.marker(latlng, { icon: pointIcon,
+                            pane: 'points'
+                         });
                     }
                     return L.circleMarker(latlng, style);
                 },
@@ -140,7 +154,7 @@ function loadGeoJSON(url, layer, style, labelField, layerType = 'polygon') {
                             icon: L.divIcon({
                                 className: 'map-label',
                                 html: `<div style="font-size: 12px; font-weight: bold; color: ${
-                                    layerType === 'polygon' ? '#3388ff' : 
+                                    layerType === 'polygon' ? '#000307' : 
                                     layerType === 'polyline' ? '#ff0000' : 
                                     '#ff0000'}; 
                                     text-shadow: -1px -1px 0 #fff, 1px -1px 0 #fff, -1px 1px 0 #fff, 1px 1px 0 #fff;">${feature.properties[labelField]}</div>`,
@@ -193,27 +207,27 @@ map.on('zoomend', function() {
 // Load sample data (replace with your actual GeoJSON files)
 
 // Point layer (e.g., postes)
-loadGeoJSON('geojs/Puntos.geojson', 
+loadGeoJSON('geojs/Cor_D2.geojson', 
            pointLayer, {color: '#ff0000'}, 'PK', 'point');
 
 // First polyline layer (e.g., main roads)
-loadGeoJSON('geojs/Linea_C1.geojson', 
+loadGeoJSON('geojs/C1.geojson', 
            polyline1Layer, polyline1Style, 'TRAMO', 'polyline');
 
-loadGeoJSON('geojs/Linea_C2.geojson', 
+loadGeoJSON('geojs/C2.geojson', 
            polyline2Layer, polyline2Style, 'TRM_RML', 'polyline');
 
 // Third polyline layer (e.g., rivers)
-loadGeoJSON('geojs/Linea C3.geojson', 
+loadGeoJSON('geojs/Ducto C3.geojson', 
            polyline3Layer, polyline3Style, 'TRM_RML', 'polyline');
 
 // Fourth layer (e.g., rivers)
-loadGeoJSON('geojs/Linea_Turno4_Adicional.geojson', 
+loadGeoJSON('geojs/Adicional.geojson', 
            polyline4Layer, polyline4Style, 'TRM_RML', 'polyline');
 
 // Polygon layer (e.g., departments of Colombia)
-loadGeoJSON('geojs/Poligon.geojson', 
-           polygonLayer, polygonStyle, 'NOMBRE_VER', 'polygon');
+loadGeoJSON('geojs/T5.geojson', 
+           polygonLayer, polygonStyle, 'VEREDA', 'polygon');
 
 
 // Layer control toggles
@@ -285,6 +299,7 @@ document.getElementById('polyline-labels-toggle').addEventListener('change', fun
     }
 });
 
+// Add this event listener for polygon labels
 document.getElementById('polygon-labels-toggle').addEventListener('change', function(e) {
     if (e.target.checked) {
         map.addLayer(polygonLabelsLayer);
@@ -293,31 +308,37 @@ document.getElementById('polygon-labels-toggle').addEventListener('change', func
     }
 });
 
+// Mobile Menu Toggle
+document.getElementById('mobile-menu-btn').addEventListener('click', function() {
+    document.getElementById('control-panel').classList.toggle('active');
+});
 
-// Add scale control
-L.control.scale({position: 'bottomleft'}).addTo(map);
+document.getElementById('close-panel-btn').addEventListener('click', function() {
+    document.getElementById('control-panel').classList.remove('active');
+});
 
-// Add legend
-const legend = L.control({position: 'bottomright'});
+// Collapsible Sections
+// Responsive collapsible sections
+document.querySelectorAll('.collapsible .section-header').forEach(header => {
+    header.addEventListener('click', function() {
+        this.parentElement.classList.toggle('active');
+        const icon = this.querySelector('i');
+        icon.classList.toggle('fa-chevron-down');
+        icon.classList.toggle('fa-chevron-up');
+    });
+});
 
-legend.onAdd = function(map) {
-    const div = L.DomUtil.create('div', 'legend');
-    div.innerHTML = `
-        <h4>Leyenda</h4>
-        <div><i class="fa-solid fa-square" style="color: #74C0FC;"></i> Veredas </div>
-        <div><i class="legend-icon polyline1-legend"></i> Linea C1</div>
-        <div><i class="legend-icon polyline2-legend"></i> Linea C2</div>
-        <div><i class="legend-icon polyline3-legend"></i> Linea C3</div>
-        <div><i class="legend-icon polyline4-legend"></i> Linea C4</div>
-        <div><i class="fa-solid fa-arrow-trend-down" style="color: #f70202;"></i> Ríosss</div>
-        <div><i class="fa-regular fa-flag"></i> Postes</div>
-        
-    `;
-    return div;
-};
+// Close panel when clicking outside
+document.addEventListener('click', function(e) {
+    const panel = document.getElementById('control-panel');
+    if (!panel.contains(e.target) && !e.target.closest('.mobile-controls')) {
+        panel.classList.remove('active');
+    }
+});
+
+
 
 // Measurement tool implementation
-
 let measureControl = {
     isMeasuring: false,
     currentPolyline: null,
@@ -415,106 +436,68 @@ map.on('contextmenu', function() {
     }
 });
 
-// Search tool implementation
-const searchControl = {
-    search: function() {
-        const query = document.getElementById('search-input').value.trim().toLowerCase();
-        const resultsContainer = document.getElementById('search-results');
-        resultsContainer.innerHTML = '';
-        
-        if (!query) {
-            resultsContainer.style.display = 'none';
-            return;
-        }
-        
-        console.log(`Searching for: "${query}"`); // Debug log
-        
-        const searchableLayers = [
-            { layer: polygonLayer, type: 'Polygon' },
-            { layer: polyline1Layer, type: 'Line C1' },
-            { layer: polyline2Layer, type: 'Line C2' },
-            { layer: polyline3Layer, type: 'Line C3' },
-            { layer: polyline4Layer, type: 'Line C4' },
-            { layer: pointLayer, type: 'Point' }
-        ];
-        
-        let foundResults = false;
-        
-        searchableLayers.forEach(layerInfo => {
-            const layers = layerInfo.layer.getLayers();
-            console.log(`Checking ${layerInfo.type} layer with ${layers.length} features`);
-            
-            layers.forEach(featureLayer => {
-                if (featureLayer.feature && featureLayer.feature.properties) {
-                    const props = featureLayer.feature.properties;
-                    console.log("Available properties:", Object.keys(props)); // Debug log
-                    
-                    for (const prop in props) {
-                        const value = String(props[prop]).toLowerCase();
-                        if (value.includes(query)) {
-                            foundResults = true;
-                            console.log(`Match found: ${prop} = ${props[prop]}`); // Debug log
-                            
-                            const resultItem = document.createElement('div');
-                            resultItem.className = 'search-result-item';
-                            resultItem.innerHTML = `
-                                <strong>${layerInfo.type}</strong><br>
-                                <small><b>${prop}:</b> ${props[prop]}</small>
-                            `;
-                            
-                            resultItem.addEventListener('click', () => {
-                                this.zoomToFeature(featureLayer);
-                                if (featureLayer.openPopup) {
-                                    featureLayer.openPopup();
-                                }
-                            });
-                            
-                            resultsContainer.appendChild(resultItem);
-                        }
-                    }
-                }
-            });
-        });
-        
-        resultsContainer.style.display = foundResults ? 'block' : 'none';
-        
-        if (!foundResults) {
-            const noResults = document.createElement('div');
-            noResults.className = 'search-result-item';
-            noResults.textContent = 'No results found';
-            resultsContainer.appendChild(noResults);
-            resultsContainer.style.display = 'block';
-        }
-    },
+// Coordinate display functionality
+let coordFormat = 'dms'; // Default format
+
+// Convert decimal degrees to DMS format
+function decimalToDMS(decimal, isLongitude) {
+    const absolute = Math.abs(decimal);
+    const degrees = Math.floor(absolute);
+    const minutesNotTruncated = (absolute - degrees) * 60;
+    const minutes = Math.floor(minutesNotTruncated);
+    const seconds = ((minutesNotTruncated - minutes) * 60).toFixed(2);
     
-    zoomToFeature: function(featureLayer) {
-        if (featureLayer.getBounds) {
-            // For polygons/polylines
-            map.fitBounds(featureLayer.getBounds(), { 
-                padding: [50, 50],
-                maxZoom: 17
-            });
-        } else if (featureLayer.getLatLng) {
-            // For points
-            map.setView(featureLayer.getLatLng(), 17);
-        }
+    let direction;
+    if (isLongitude) {
+        direction = decimal >= 0 ? 'E' : 'W';
+    } else {
+        direction = decimal >= 0 ? 'N' : 'S';
     }
-};
+    
+    return `${degrees}°${minutes.toString().padStart(2, '0')}'${seconds.toString().padStart(5, '0')}"${direction}`;
+}
 
-// Event listeners with better error handling
-document.getElementById('search-btn').addEventListener('click', () => {
-    try {
-        searchControl.search();
-    } catch (error) {
-        console.error("Search error:", error);
-        alert("Search failed. Check console for details.");
+// Format coordinates based on current format selection
+function formatCoordinate(value, isLongitude) {
+    if (coordFormat === 'decimal') {
+        return value.toFixed(6) + '°';
+    } else { // DMS
+        return decimalToDMS(value, isLongitude);
     }
-});
+}
 
-document.getElementById('search-input').addEventListener('keyup', (e) => {
-    if (e.key === 'Enter') {
-        searchControl.search();
-    }
-});
+// Update coordinate display on mouse move
+function updateCoordinateDisplay(latlng) {
+    const lat = latlng.lat;
+    const lng = latlng.lng;
+    
+    document.getElementById('latitude').textContent = formatCoordinate(lat, false);
+    document.getElementById('longitude').textContent = formatCoordinate(lng, true);
+}
+
+// Initialize coordinate display
+function initCoordinateDisplay() {
+    // Set initial position (center of map)
+    updateCoordinateDisplay(map.getCenter());
+    
+    // Update on mouse move
+    map.on('mousemove', function(e) {
+        updateCoordinateDisplay(e.latlng);
+    });
+    
+    // Reset when mouse leaves map
+    map.on('mouseout', function() {
+        updateCoordinateDisplay(map.getCenter());
+    });
+    
+    // Handle format change
+    document.getElementById('coord-format').addEventListener('change', function(e) {
+        coordFormat = e.target.value;
+        updateCoordinateDisplay(map.getCenter());
+    });
+}
+
+// Initialize when map is ready
+map.whenReady(initCoordinateDisplay);
 
 legend.addTo(map);

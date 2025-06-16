@@ -146,12 +146,12 @@ function loadGeoJSON(url, layer, style, labelField, layerType = 'polygon') {
 }
 
 // Load GeoJSON data
-loadGeoJSON('geojs/Cor_D2.geojson', layers.point, {}, 'PK', 'point');
-loadGeoJSON('geojs/C1.geojson', layers.polyline1, styles.polyline1, 'TRAMO', 'polyline');
-loadGeoJSON('geojs/C2.geojson', layers.polyline2, styles.polyline2, 'TRM_RML', 'polyline');
+loadGeoJSON('geojs/Edificacion_Cor_D2.geojson', layers.point, {}, 'PK', 'point');
+loadGeoJSON('geojs/Ducto_C1.geojson', layers.polyline1, styles.polyline1, 'TRAMO', 'polyline');
+loadGeoJSON('geojs/Ducto_C2.geojson', layers.polyline2, styles.polyline2, 'TRM_RML', 'polyline');
 loadGeoJSON('geojs/Ducto C3.geojson', layers.polyline3, styles.polyline3, 'TRM_RML', 'polyline');
-loadGeoJSON('geojs/Adicional.geojson', layers.polyline4, styles.polyline4, 'TRM_RML', 'polyline');
-loadGeoJSON('geojs/T5.geojson', layers.polygon, styles.polygon, 'VEREDA', 'polygon');
+loadGeoJSON('geojs/Ducto_Turno4_Adicional.geojson', layers.polyline4, styles.polyline4, 'TRM_RML', 'polyline');
+loadGeoJSON('geojs/Veredas300.geojson', layers.polygon, styles.polygon, 'VEREDA', 'polygon');
 
 // Update point icons on zoom
 map.on('zoomend', function() {

@@ -1,169 +1,112 @@
 // Initialize the map centered on Colombia
 const map = L.map('map').setView([4.5709, -74.2973], 6);
 
-// Mobile detection and adjustments
-const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+// Create panes for z-index control
+map.createPane('polygons');
+map.createPane('polylines');
+map.createPane('points');
+map.createPane('labels');
 
-if (isMobile) {
-    // Adjust view for mobile
-    map.setZoom(map.getZoom() - 1); // Zoom out slightly
-    map.tap?.disable(); // Disable tap delay if plugin exists
-    
-    // Optimize touch controls
-    map.dragging.enable();
-    map.touchZoom.enable();
-    map.doubleClickZoom.disable();
-}
+// Set z-index values
+map.getPane('polygons').style.zIndex = 200;
+map.getPane('polylines').style.zIndex = 400;
+map.getPane('points').style.zIndex = 600;
+map.getPane('labels').style.zIndex = 800;
 
-// Add base map - Using OpenStreetMap as base
-// Define base maps
+// Base maps
 const baseMaps = {
     "OpenStreetMap": L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        attribution: '&copy; OpenStreetMap contributors',
+        pane: 'tilePane'
     }),
     "ESRI Satellite": L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-        attribution: 'Tiles &copy; Esri &mdash; Source: Esri, Maxar, Earthstar Geographics'
+        attribution: 'Tiles &copy; Esri',
+        pane: 'tilePane'
     })
 };
 
 // Add default base map
 baseMaps["OpenStreetMap"].addTo(map);
 
-// Touch device optimizations
-if ('ontouchstart' in window) {
-    // Increase hit area for touch devices
-    L.DomUtil.addClass(map._container, 'leaflet-touch');
-    
-    // Adjust interaction thresholds
-    map.options.tapTolerance = 15;
-    map.options.touchZoom = 'center';
-}
-// Custom style for first polyline layer (vías principales)
-// Add this near your other style definitions
-
-// Custom icon for point layer (postes)
-const pointIcon = L.divIcon({
-    className: 'custom-fa-marker',  // Note the changed class name
-    html: '<i class="fa-regular fa-plus"></i>',
-    iconSize: [20, 20],            // Slightly larger for better visibility
-    iconAnchor: [10, 10],           // Center anchor
-    pane: 'points'
-});
-
-const polyline1Style = {
-    color: '#DE1414',
-    weight: 4,
-    opacity: 0.8,
-    pane: 'polylines'
-};
-
-// Custom style for second polyline layer (C2)
-const polyline2Style = {
-    color: '#5CEE0E',
-    weight: 4,
-    opacity: 0.8,
-    pane: 'polylines'
-};
-
-const polyline3Style = {
-    color: '#EE0ECC',
-    weight: 4,
-    opacity: 0.8,
-    pane: 'polylines'
-};
-
-const polyline4Style = {
-    color: '#0E30EE',
-    weight: 4,
-    opacity: 0.8,
-    pane: 'polylines'
-};
-
-// Custom style for polygon layer
-const polygonStyle = {
-    fillColor: '#EDED0E',
-    weight: 1,
-    opacity: 1,
-    color: '#EDBD0E',
-    fillOpacity: 0.3,
-    pane: 'polygons'  // for order control
+// Layer styles
+const styles = {
+    point: {
+        icon: function(zoomLevel) {
+            const size = Math.max(8, 14 - (15 - zoomLevel));
+            return L.divIcon({
+                className: 'custom-fa-marker',
+                html: `<i class="fa-regular fa-plus" style="font-size: ${size}px;"></i>`,
+                iconSize: [size, size],
+                iconAnchor: [size/2, size/2],
+                pane: 'points'
+            });
+        }
+    },
+    polyline1: { color: '#DE1414', weight: 4, opacity: 0.8, pane: 'polylines' },
+    polyline2: { color: '#5CEE0E', weight: 4, opacity: 0.8, pane: 'polylines' },
+    polyline3: { color: '#EE0ECC', weight: 4, opacity: 0.8, pane: 'polylines' },
+    polyline4: { color: '#0E30EE', weight: 4, opacity: 0.8, pane: 'polylines' },
+    polygon: { 
+        fillColor: '#EDED0E', 
+        weight: 1, 
+        color: '#EDBD0E',
+        fillOpacity: 0.3,
+        pane: 'polygons'
+    }
 };
 
 // Create layer groups
+const layers = {
+    point: L.layerGroup().addTo(map),
+    polyline1: L.layerGroup().addTo(map),
+    polyline2: L.layerGroup().addTo(map),
+    polyline3: L.layerGroup().addTo(map),
+    polyline4: L.layerGroup().addTo(map),
+    polygon: L.layerGroup().addTo(map),
+    pointLabels: L.layerGroup(),
+    polylineLabels: L.layerGroup(),
+    polygonLabels: L.layerGroup()
+};
 
-const pointLayer = L.layerGroup().addTo(map);
-const polyline1Layer = L.layerGroup().addTo(map);
-const polyline2Layer = L.layerGroup().addTo(map);
-const polyline3Layer = L.layerGroup().addTo(map);
-const polyline4Layer = L.layerGroup().addTo(map);
-const polygonLayer = L.layerGroup().addTo(map);
-const pointLabelsLayer = L.layerGroup()
-const polylineLabelsLayer = L.layerGroup()
-const polygonLabelsLayer = L.layerGroup()
-
-// Create panes for explicit z-index control
-map.createPane('polygons');
-map.createPane('polylines');
-map.createPane('points');
-
-// Set z-index values (higher numbers appear above lower numbers)
-map.getPane('polygons').style.zIndex = 200;
-map.getPane('polylines').style.zIndex = 400;
-map.getPane('points').style.zIndex = 600;
-// -------------------------------------------------------------------------------
-// Remove the static pointIcon constant and replace with a dynamic function
-function getPointIcon(zoomLevel) {
-    // Calculate size based on zoom level
-    const baseSize = 14; // Base size at zoom level 12
-    const size = Math.max(8, baseSize - (15 - zoomLevel)); // Adjust these values as needed
-    
-    return L.divIcon({
-        className: 'custom-fa-marker',
-        html: `<i class="fa-regular fa-plus" style="font-size: ${size}px;"></i>`,
-        iconSize: [size, size],
-        iconAnchor: [size/2, size/2],
-        popupAnchor: [0, -size/2]
-    });
-}
-
-// Store current point layers to update them on zoom
+// Store point layers for zoom updates
 const pointLayers = [];
 
-// Base map toggle control
-document.getElementById('base-street').addEventListener('change', function() {
+// Base map toggles
+document.getElementById('base-street')?.addEventListener('change', function() {
     if (this.checked) {
         map.removeLayer(baseMaps["ESRI Satellite"]);
         map.addLayer(baseMaps["OpenStreetMap"]);
     }
 });
 
-document.getElementById('base-satellite').addEventListener('change', function() {
+document.getElementById('base-satellite')?.addEventListener('change', function() {
     if (this.checked) {
         map.removeLayer(baseMaps["OpenStreetMap"]);
         map.addLayer(baseMaps["ESRI Satellite"]);
     }
 });
 
+// GeoJSON loader
 function loadGeoJSON(url, layer, style, labelField, layerType = 'polygon') {
     fetch(url)
         .then(response => response.json())
         .then(data => {
-            // Clear previous data
             layer.clearLayers();
             
-            // Add new data with style
-            const geoJsonLayer = L.geoJSON(data, {
-                pointToLayer: function(feature, latlng) {
+            L.geoJSON(data, {
+                pointToLayer: (feature, latlng) => {
                     if (layerType === 'point') {
-                        return L.marker(latlng, { icon: pointIcon,
+                        const marker = L.marker(latlng, { 
+                            icon: styles.point.icon(map.getZoom()),
                             pane: 'points'
-                         });
+                        });
+                        pointLayers.push(marker);
+                        return marker;
                     }
                     return L.circleMarker(latlng, style);
                 },
                 style: style,
-                onEachFeature: function(feature, layer) {
-                    // Add popup with feature information
+                onEachFeature: (feature, layer) => {
                     if (feature.properties) {
                         let popupContent = '<div class="info"><h4>Información</h4>';
                         for (const prop in feature.properties) {
@@ -173,216 +116,154 @@ function loadGeoJSON(url, layer, style, labelField, layerType = 'polygon') {
                         layer.bindPopup(popupContent);
                     }
                     
-                    // Add label if labelField is provided
-                    if (labelField && feature.properties && feature.properties[labelField]) {
-                        const label = L.marker(layer.getBounds ? layer.getBounds().getCenter() : layer.getLatLng(), {
+                    if (labelField && feature.properties?.[labelField]) {
+                        const position = layer.getBounds?.().getCenter() || layer.getLatLng();
+                        const labelColor = layerType === 'polygon' ? '#000307' : 
+                                         layerType === 'polyline' ? style.color : '#ff0000';
+                        
+                        const label = L.marker(position, {
                             icon: L.divIcon({
                                 className: 'map-label',
-                                html: `<div style="font-size: 12px; font-weight: bold; color: ${
-                                    layerType === 'polygon' ? '#000307' : 
-                                    layerType === 'polyline' ? '#ff0000' : 
-                                    '#ff0000'}; 
-                                    text-shadow: -1px -1px 0 #fff, 1px -1px 0 #fff, -1px 1px 0 #fff, 1px 1px 0 #fff;">${feature.properties[labelField]}</div>`,
-                                iconSize: [100, 20]
+                                html: `<div style="font-size:12px;font-weight:bold;color:${labelColor};
+                                      text-shadow:-1px -1px 0 #fff,1px -1px 0 #fff,-1px 1px 0 #fff,1px 1px 0 #fff;">
+                                      ${feature.properties[labelField]}</div>`,
+                                iconSize: [100, 20],
+                                pane: 'labels'
                             }),
                             interactive: false
                         });
                         
-                        // Determine which label layer to use based on feature type
-                        let targetLabelLayer;
-                        if (layerType === 'polygon') {
-                            targetLabelLayer = polygonLabelsLayer;
-                        } else if (layerType === 'polyline') {
-                            targetLabelLayer = polylineLabelsLayer;
-                        } else {
-                            targetLabelLayer = pointLabelsLayer;
-                        }
+                        const labelLayer = layerType === 'polygon' ? layers.polygonLabels :
+                                        layerType === 'polyline' ? layers.polylineLabels :
+                                        layers.pointLabels;
                         
-                        // Store the label in the appropriate layer but don't add to map yet
-                        targetLabelLayer.addLayer(label);
-                        
-                        // Check if the corresponding toggle is checked
-                        const toggleId = layerType === 'polygon' ? 'polygon-labels-toggle' :
-                                       layerType === 'polyline' ? 'polyline-labels-toggle' :
-                                       'point-labels-toggle';
-                        
-                        // Add to map only if toggle is checked
-                        if (document.getElementById(toggleId)?.checked) {
-                            map.addLayer(targetLabelLayer);
-                        }
+                        labelLayer.addLayer(label);
                     }
                 }
-            });
-            
-            layer.addLayer(geoJsonLayer);
+            }).addTo(layer);
         })
-        .catch(error => {
-            console.error('Error loading GeoJSON:', error);
-        });
+        .catch(console.error);
 }
-// Add zoom event listener to update icons
+
+// Load GeoJSON data
+loadGeoJSON('geojs/Edificacion_Cor_D2.geojson', layers.point, {}, 'PK', 'point');
+loadGeoJSON('geojs/Ducto_C1.geojson', layers.polyline1, styles.polyline1, 'TRAMO', 'polyline');
+loadGeoJSON('geojs/Ducto_C2.geojson', layers.polyline2, styles.polyline2, 'TRM_RML', 'polyline');
+loadGeoJSON('geojs/Ducto C3.geojson', layers.polyline3, styles.polyline3, 'TRM_RML', 'polyline');
+loadGeoJSON('geojs/Ducto_Turno4_Adicional.geojson', layers.polyline4, styles.polyline4, 'TRM_RML', 'polyline');
+loadGeoJSON('geojs/Veredas300.geojson', layers.polygon, styles.polygon, 'VEREDA', 'polygon');
+
+// Update point icons on zoom
 map.on('zoomend', function() {
-    const currentZoom = map.getZoom();
+    const zoom = map.getZoom();
     pointLayers.forEach(marker => {
-        marker.setIcon(getPointIcon(currentZoom));
+        marker.setIcon(styles.point.icon(zoom));
     });
 });
-// --------------------------------------------------------------------------------------------------------------------
 
-// Load sample data (replace with your actual GeoJSON files)
+// ==============================================
+// PANEL CONTROL FUNCTIONS
+// ==============================================
 
-// Point layer (e.g., postes)
-loadGeoJSON('geojs/Edificacion_Cor_D2.geojson', 
-           pointLayer, {color: '#ff0000'}, 'PK', 'point');
+const panel = document.getElementById('control-panel');
+const closeBtn = document.getElementById('close-panel-btn');
+const menuBtn = document.getElementById('mobile-menu-btn');
 
-// First polyline layer (e.g., main roads)
-loadGeoJSON('geojs/Ducto_C1.geojson', 
-           polyline1Layer, polyline1Style, 'TRAMO', 'polyline');
-
-loadGeoJSON('geojs/Ducto_C2.geojson', 
-           polyline2Layer, polyline2Style, 'TRM_RML', 'polyline');
-
-// Third polyline layer (e.g., rivers)
-loadGeoJSON('geojs/Ducto C3.geojson', 
-           polyline3Layer, polyline3Style, 'TRM_RML', 'polyline');
-
-// Fourth layer (e.g., rivers)
-loadGeoJSON('geojs/Ducto_Turno4_Adicional.geojson', 
-           polyline4Layer, polyline4Style, 'TRM_RML', 'polyline');
-
-// Polygon layer (e.g., departments of Colombia)
-loadGeoJSON('geojs/VeredasT5.geojson', 
-           polygonLayer, polygonStyle, 'VEREDA', 'polygon');
-
-
-// Layer control toggles
-
-// ------------------------------------
-function setupResponsiveControls() {
-    const controlsContainer = document.getElementById('control-panel');
-    
-    if (isMobile) {
-        // Create mobile-friendly accordion
-        controlsContainer.innerHTML = `
-            <div class="mobile-accordion">
-                <button class="accordion-btn">Capas <i class="fas fa-chevron-down"></i></button>
-                <div class="accordion-content">
-                    <!-- Your existing control toggles will be injected here -->
-                </div>
-            </div>
-        `;
+// Function to toggle panel visibility with animation
+function togglePanel(show) {
+    if (show) {
+        // Show panel - slide in from left
+        panel.style.transform = 'translateX(0)';
+        panel.style.display = 'block';
+        panel.classList.add('active');
+    } else {
+        // Hide panel - slide out to left
+        panel.style.transform = 'translateX(-100%)';
         
-        // Add accordion behavior
-        document.querySelector('.accordion-btn').addEventListener('click', function() {
-            this.classList.toggle('active');
-            const content = this.nextElementSibling;
-            content.style.display = content.style.display === 'block' ? 'none' : 'block';
-        });
+        // After animation completes, hide completely
+        setTimeout(() => {
+            panel.style.display = 'none';
+        }, 300); // Match this with your CSS transition duration
+        
+        panel.classList.remove('active');
     }
-
-// -----------------------------------
-
-document.getElementById('point-layer-toggle').addEventListener('change', function(e) {
-    if (e.target.checked) {
-        map.addLayer(pointLayer);
-    } else {
-        map.removeLayer(pointLayer);
-    }
-});
-
-document.getElementById('polyline1-layer-toggle').addEventListener('change', function(e) {
-    if (e.target.checked) {
-        map.addLayer(polyline1Layer);
-    } else {
-        map.removeLayer(polyline1Layer);
-    }
-});
-
-document.getElementById('polyline2-layer-toggle').addEventListener('change', function(e) {
-    if (e.target.checked) {
-        map.addLayer(polyline2Layer);
-    } else {
-        map.removeLayer(polyline2Layer);
-    }
-});
-
-document.getElementById('polyline3-layer-toggle').addEventListener('change', function(e) {
-    if (e.target.checked) {
-        map.addLayer(polyline3Layer);
-    } else {
-        map.removeLayer(polyline3Layer);
-    }
-});
-
-document.getElementById('polyline4-layer-toggle').addEventListener('change', function(e) {
-    if (e.target.checked) {
-        map.addLayer(polyline4Layer);
-    } else {
-        map.removeLayer(polyline4Layer);
-    }
-});
-
-document.getElementById('polygon-layer-toggle').addEventListener('change', function(e) {
-    if (e.target.checked) {
-        map.addLayer(polygonLayer);
-    } else {
-        map.removeLayer(polygonLayer);
-    }
-});
-
-// Label control toggles
-
-// Add point labels toggle (add this to your HTML first)
-document.getElementById('point-labels-toggle').addEventListener('change', function(e) {
-    if (e.target.checked) {
-        map.addLayer(pointLabelsLayer);
-    } else {
-        map.removeLayer(pointLabelsLayer);
-    }
-});
-
-document.getElementById('polyline-labels-toggle').addEventListener('change', function(e) {
-    if (e.target.checked) {
-        map.addLayer(polylineLabelsLayer);
-    } else {
-        map.removeLayer(polylineLabelsLayer);
-    }
-});
-
-// Add this event listener for polygon labels
-document.getElementById('polygon-labels-toggle').addEventListener('change', function(e) {
-    if (e.target.checked) {
-        map.addLayer(polygonLabelsLayer);
-    } else {
-        map.removeLayer(polygonLabelsLayer);
-    }
-});
-
 }
-setTimeout(setupResponsiveControls, 1000);
-/* // Add scale control
-L.control.scale({position: 'bottomleft'}).addTo(map);
 
-// Add legend
-const legend = L.control({position: 'bottomright'}); */
+// Initialize panel state
+togglePanel(false); // Start with panel hidden
 
-/* legend.onAdd = function(map) {
-    const div = L.DomUtil.create('div', 'legend');
-    div.innerHTML = `
-        <h4>Leyenda</h4>
-        <div><i class="fa-solid fa-square" style="color: #74C0FC;"></i> Veredas </div>
-        <div><i class="legend-icon polyline1-legend"></i> Ducto C1</div>
-        <div><i class="legend-icon polyline2-legend"></i> Ducto C2</div>
-        <div><i class="legend-icon polyline3-legend"></i> Ducto C3</div>
-        <div><i class="legend-icon polyline4-legend"></i> Ducto C4</div>
-        <div><i class="fa-solid fa-arrow-trend-down" style="color: #f70202;"></i> Ríosss</div>
-        <div><i class="fa-regular fa-flag"></i> Postes</div>
-        
-    `;
-    return div;
-}; */
+// Close button click handler
+closeBtn.addEventListener('click', function(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    togglePanel(false); // Hide panel
+});
 
-// Measurement tool implementation
+// Menu button click handler
+menuBtn.addEventListener('click', function(e) {
+    e.stopPropagation();
+    togglePanel(true); // Show panel
+});
+
+// Close when clicking outside panel
+document.addEventListener('click', function(e) {
+    if (panel.classList.contains('active') && 
+        !panel.contains(e.target) && 
+        e.target !== menuBtn && 
+        !menuBtn.contains(e.target)) {
+        togglePanel(false);
+    }
+});
+
+// Close with ESC key
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape' && panel.classList.contains('active')) {
+        togglePanel(false);
+    }
+});
+
+// ==============================================
+// LAYER TOGGLES
+// ==============================================
+
+function setupToggle(id, layer) {
+    document.getElementById(id)?.addEventListener('change', (e) => {
+        e.target.checked ? map.addLayer(layer) : map.removeLayer(layer);
+    });
+}
+
+setupToggle('point-layer-toggle', layers.point);
+setupToggle('polyline1-layer-toggle', layers.polyline1);
+setupToggle('polyline2-layer-toggle', layers.polyline2);
+setupToggle('polyline3-layer-toggle', layers.polyline3);
+setupToggle('polyline4-layer-toggle', layers.polyline4);
+setupToggle('polygon-layer-toggle', layers.polygon);
+setupToggle('point-labels-toggle', layers.pointLabels);
+setupToggle('polyline-labels-toggle', layers.polylineLabels);
+setupToggle('polygon-labels-toggle', layers.polygonLabels);
+
+// ==============================================
+// COLLAPSIBLE SECTIONS
+// ==============================================
+
+document.querySelectorAll('.control-section.collapsible').forEach(section => {
+    const header = section.querySelector('.section-header');
+    const content = section.querySelector('.section-content');
+    const icon = header.querySelector('i');
+    
+    header.addEventListener('click', () => {
+        const wasActive = section.classList.toggle('active');
+        content.style.maxHeight = wasActive ? content.scrollHeight + 'px' : '0';
+        icon.classList.toggle('fa-chevron-up', wasActive);
+        icon.classList.toggle('fa-chevron-down', !wasActive);
+    });
+});
+
+// ==============================================
+// MEASUREMENT TOOL
+// ==============================================
+
+// Improved measurement tool implementation
 let measureControl = {
     isMeasuring: false,
     currentPolyline: null,
@@ -480,10 +361,12 @@ map.on('contextmenu', function() {
     }
 });
 
-// Coordinate display functionality
-let coordFormat = 'dms'; // Default format
+// ==============================================
+// COORDINATE DISPLAY
+// ==============================================
 
-// Convert decimal degrees to DMS format
+let coordFormat = 'dms';
+
 function decimalToDMS(decimal, isLongitude) {
     const absolute = Math.abs(decimal);
     const degrees = Math.floor(absolute);
@@ -491,168 +374,49 @@ function decimalToDMS(decimal, isLongitude) {
     const minutes = Math.floor(minutesNotTruncated);
     const seconds = ((minutesNotTruncated - minutes) * 60).toFixed(2);
     
-    let direction;
-    if (isLongitude) {
-        direction = decimal >= 0 ? 'E' : 'W';
-    } else {
-        direction = decimal >= 0 ? 'N' : 'S';
-    }
+    const direction = isLongitude ? (decimal >= 0 ? 'E' : 'W') : (decimal >= 0 ? 'N' : 'S');
     
     return `${degrees}°${minutes.toString().padStart(2, '0')}'${seconds.toString().padStart(5, '0')}"${direction}`;
 }
 
-// Format coordinates based on current format selection
 function formatCoordinate(value, isLongitude) {
-    if (coordFormat === 'decimal') {
-        return value.toFixed(6) + '°';
-    } else { // DMS
-        return decimalToDMS(value, isLongitude);
-    }
+    return coordFormat === 'decimal' ? 
+        value.toFixed(6) + '°' : 
+        decimalToDMS(value, isLongitude);
 }
 
-// Update coordinate display on mouse move
 function updateCoordinateDisplay(latlng) {
-    const lat = latlng.lat;
-    const lng = latlng.lng;
-    
-    document.getElementById('latitude').textContent = formatCoordinate(lat, false);
-    document.getElementById('longitude').textContent = formatCoordinate(lng, true);
+    document.getElementById('latitude').textContent = formatCoordinate(latlng.lat, false);
+    document.getElementById('longitude').textContent = formatCoordinate(latlng.lng, true);
 }
 
-// Initialize coordinate display
-function initCoordinateDisplay() {
-    // Set initial position (center of map)
+map.on('mousemove', (e) => updateCoordinateDisplay(e.latlng));
+map.on('mouseout', () => updateCoordinateDisplay(map.getCenter()));
+
+document.getElementById('coord-format').addEventListener('change', (e) => {
+    coordFormat = e.target.value;
     updateCoordinateDisplay(map.getCenter());
-    
-    // Update on mouse move
-    map.on('mousemove', function(e) {
-        updateCoordinateDisplay(e.latlng);
-    });
-    
-    // Reset when mouse leaves map
-    map.on('mouseout', function() {
-        updateCoordinateDisplay(map.getCenter());
-    });
-    
-    // Handle format change
-    document.getElementById('coord-format').addEventListener('change', function(e) {
-        coordFormat = e.target.value;
-        updateCoordinateDisplay(map.getCenter());
-    });
-}
-
-// Initialize when map is ready
-map.whenReady(initCoordinateDisplay);
-
-/* // Search tool implementation
-const searchControl = {
-    search: function() {
-        const query = document.getElementById('search-input').value.trim().toLowerCase();
-        const resultsContainer = document.getElementById('search-results');
-        resultsContainer.innerHTML = '';
-        
-        if (!query) {
-            resultsContainer.style.display = 'none';
-            return;
-        }
-        
-        const searchableLayers = [
-            { layer: polygonLayer, type: 'Polygon', name: 'Veredas' },
-            { layer: polyline1Layer, type: 'Line', name: 'Línea C1' },
-            { layer: polyline2Layer, type: 'Line', name: 'Línea C2' },
-            { layer: polyline3Layer, type: 'Line', name: 'Línea C3' },
-            { layer: polyline4Layer, type: 'Line', name: 'Línea C4' },
-            { layer: pointLayer, type: 'Point', name: 'Postes' }
-        ];
-        
-        let foundResults = false;
-        
-        searchableLayers.forEach(layerInfo => {
-            layerInfo.layer.eachLayer(featureLayer => {
-                if (featureLayer.feature && featureLayer.feature.properties) {
-                    const props = featureLayer.feature.properties;
-                    
-                    for (const prop in props) {
-                        const value = String(props[prop]).toLowerCase();
-                        if (value.includes(query)) {
-                            foundResults = true;
-                            
-                            const resultItem = document.createElement('div');
-                            resultItem.className = 'search-result-item';
-                            resultItem.innerHTML = `
-                                <strong>${layerInfo.name}</strong>
-                                <small>${prop}: ${props[prop]}</small>
-                            `;
-                            
-                            resultItem.addEventListener('click', () => {
-                                this.zoomToFeature(featureLayer);
-                                if (featureLayer.openPopup) {
-                                    featureLayer.openPopup();
-                                }
-                            });
-                            
-                            resultsContainer.appendChild(resultItem);
-                        }
-                    }
-                }
-            });
-        });
-        
-        resultsContainer.style.display = foundResults ? 'block' : 'none';
-        
-        if (!foundResults) {
-            const noResults = document.createElement('div');
-            noResults.className = 'search-result-item';
-            noResults.textContent = 'No se encontraron resultados';
-            resultsContainer.appendChild(noResults);
-            resultsContainer.style.display = 'block';
-        }
-    },
-    
-    zoomToFeature: function(featureLayer) {
-        if (featureLayer.getBounds) {
-            // For polygons/polylines
-            map.fitBounds(featureLayer.getBounds(), { 
-                padding: [50, 50],
-                maxZoom: 17
-            });
-        } else if (featureLayer.getLatLng) {
-            // For points
-            map.setView(featureLayer.getLatLng(), 17);
-        }
-    }
-};
-
-// Event listeners
-document.getElementById('search-btn').addEventListener('click', () => {
-    searchControl.search();
 });
 
-document.getElementById('search-input').addEventListener('keyup', (e) => {
-    if (e.key === 'Enter') {
-        searchControl.search();
-    }
-}); */
+// Initialize coordinate display
+updateCoordinateDisplay(map.getCenter());
 
 // ==============================================
-// Dynamic viewport adjustment
-function handleResize() {
-    if (window.innerWidth <= 768) {
-        // Mobile layout
-        document.getElementById('coordinate-container').style.flexDirection = 'column';
-        document.getElementById('control-panel').classList.add('mobile-view');
-    } else {
-        // Desktop layout
-        document.getElementById('coordinate-container').style.flexDirection = 'row';
-        document.getElementById('control-panel').classList.remove('mobile-view');
-    }
-}
-
-// Initial check
-handleResize();
-
-// Update on resize
-window.addEventListener('resize', handleResize);
+// LEGEND
 // ==============================================
 
+// const legend = L.control({ position: 'bottomright' });
+// legend.onAdd = function() {
+//     const div = L.DomUtil.create('div', 'legend');
+//     div.innerHTML = `
+//         <h4>Leyenda</h4>
+//         <div><i style="background:${styles.polyline1.color}"></i> Ducto C1</div>
+//         <div><i style="background:${styles.polyline2.color}"></i> Ducto C2</div>
+//         <div><i style="background:${styles.polyline3.color}"></i> Ducto C3</div>
+//         <div><i style="background:${styles.polyline4.color}"></i> Ducto C4</div>
+//         <div><i style="background:${styles.polygon.fillColor}"></i> Veredas</div>
+//         <div><i class="fa-regular fa-plus" style="color:#EE8C0B"></i> Edificaciones</div>
+//     `;
+//     return div;
+// };
 legend.addTo(map);

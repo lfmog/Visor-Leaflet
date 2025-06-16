@@ -3,178 +3,157 @@
 <head>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Visor GIS Colombia</title>
-    <html lang="es">
-    <style>
-        /* Base styles */
-        body {
-            margin: 0;
-            padding: 0;
-            font-family: 'Segoe UI', sans-serif;
-            font-size: 16px;
-        }
-        
-        #map {
-            height: 100vh;
-            width: 100%;
-        }
-        
-        /* Mobile overrides */
-        @media (max-width: 768px) {
-            body {
-                font-size: 14px;
-            }
-            
-            #map {
-                height: 60vh !important;
-            }
-            
-            #bottom-panel {
-                height: 40vh;
-                overflow-y: auto;
-            }
-            
-            .control-btn {
-                min-height: 44px;
-                min-width: 44px;
-            }
-        }
-    </style>
-    
-    <!-- Leaflet CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    
-    <!-- Font Awesome for icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
-    <!-- Custom CSS -->
     <link rel="stylesheet" href="css/style.css">
-
-
 </head>
 <body>
     <div id="map"></div>
     
-    <div class="control-panel">
-        <h3><i class="fas fa-layer-group"></i> Capas</h3>
-        <!-- Add measure tool -->
-        <div class="control-section">
-            <button id="measure-toggle" class="control-btn" title="Click to measure, right-click to finish">
-                <i class="fas fa-ruler"></i> Medir Distancia
+    <!-- Mobile Controls -->
+    <div class="mobile-controls">
+        <button id="mobile-menu-btn" class="mobile-btn" type="button">
+            <i class="fas fa-layer-group"></i> Capas
+        </button>
+        <!-- <button id="mobile-search-btn" class="mobile-btn" type="button">
+            <i class="fas fa-search"></i>
+        </button> -->
+    </div>
+
+    <!-- Main Control Panel -->
+    <div id="control-panel">
+        <div class="panel-header">
+            <h3><i class="fas fa-layer-group"></i> Capas</h3>
+            <button id="close-panel-btn" class="close-btn" type="button" aria-label="Cerrar panel">
+                <i class="fas fa-times"></i>
             </button>
-            <div id="measure-result" style="display: none;">
-                <span>Distancia total:</span> <span id="measure-value">0</span> km
+        </div>
+
+        <!-- Collapsible Sections -->
+        <div class="control-section collapsible active">
+            <div class="section-header">
+                <h4>Herramientas</h4>
+                <i class="fas fa-chevron-down"></i>
+            </div>
+            <div class="section-content">
+                <!-- Measure Tool -->
+                <div class="layer-toggle">
+                    <button id="measure-toggle" class="control-btn" type="button">
+                        <i class="fas fa-ruler"></i> Medir Distancia
+                    </button>
+                    <div id="measure-result">
+                        <span>Distancia total:</span> <span id="measure-value">0</span> km
+                    </div>
+                </div>
             </div>
         </div>
 
-
-        <!-- Add Search Tool -->
-<!--         <div class="control-section">
-            <div class="search-container">
-                <input type="text" id="search-input" placeholder="Buscar por nombre, tipo...">
-                <button id="search-btn"><i class="fas fa-search"></i></button>
+        <div class="control-section collapsible active">
+            <div class="section-header">
+                <h4>Mapa Base</h4>
+                <i class="fas fa-chevron-down"></i>
             </div>
-            <div id="search-results"></div>
-        </div> -->
-
-        <!-- Base Map Toggle -->
-        <div class="control-section">
-            <h4>Mapa Base</h4>
-            <div class="layer-toggle">
-                <input type="radio" id="base-street" name="base-map" checked>
-                <label for="base-street">
-                    <i class="fas fa-map"></i> OpenStreetMap
-                </label>
-            </div>
-            <div class="layer-toggle">
-                <input type="radio" id="base-satellite" name="base-map">
-                <label for="base-satellite">
-                    <i class="fas fa-satellite"></i> Satélite (ESRI)
-                </label>
+            <div class="section-content">
+                <div class="layer-toggle">
+                    <input type="radio" id="base-street" name="base-map" checked>
+                    <label for="base-street">
+                        <i class="fas fa-map"></i> OpenStreetMap
+                    </label>
+                </div>
+                <div class="layer-toggle">
+                    <input type="radio" id="base-satellite" name="base-map">
+                    <label for="base-satellite">
+                        <i class="fas fa-satellite"></i> Satélite (ESRI)
+                    </label>
+                </div>
             </div>
         </div>
 
-        <h3><i class="fas fa-layer-group"></i> Capas</h3>
-        
-        <div class="layer-control">
-            <h4>Mostrar/ocultar capas</h4>`
-
-            <div class="layer-toggle">
-                <input type="checkbox" id="point-layer-toggle" checked>
-                <label for="point-layer-toggle">
-                    <span class="layer-color point-color"></span>
-                    Edificaciones
-                </label>
+        <div class="control-section collapsible active">
+            <div class="section-header">
+                <h4>Capas Principales</h4>
+                <i class="fas fa-chevron-down"></i>
             </div>
-            
-            <div class="layer-toggle">
-                <input type="checkbox" id="polyline1-layer-toggle" checked>
-                <label for="polyline1-layer-toggle">
-                    <span class="layer-color polyline1-color"></span>
-                    Ducto C1
-                </label>
+            <div class="section-content compact">
+                <div class="layer-toggle">
+                    <input type="checkbox" id="point-layer-toggle" checked>
+                    <label for="point-layer-toggle">
+                        <span class="layer-color point-color"></span>
+                        Edificaciones
+                    </label>
+                </div>
+                <div class="layer-toggle">
+                    <input type="checkbox" id="polyline1-layer-toggle" checked>
+                    <label for="polyline1-layer-toggle">
+                        <span class="layer-color polyline1-color"></span>
+                        Ducto C1
+                    </label>
+                </div>
+                <div class="layer-toggle">
+                    <input type="checkbox" id="polyline2-layer-toggle" checked>
+                    <label for="polyline2-layer-toggle">
+                        <span class="layer-color polyline2-color"></span>
+                        Ducto C2
+                    </label>
+                </div>
+                <div class="layer-toggle">
+                    <input type="checkbox" id="polyline3-layer-toggle" checked>
+                    <label for="polyline3-layer-toggle">
+                        <span class="layer-color polyline3-color"></span>
+                        Ducto C3
+                    </label>
+                </div>
+                <div class="layer-toggle">
+                    <input type="checkbox" id="polyline4-layer-toggle" checked>
+                    <label for="polyline4-layer-toggle">
+                        <span class="layer-color polyline4-color"></span>
+                        Ducto C4
+                    </label>
+                </div>
+                <div class="layer-toggle">
+                    <input type="checkbox" id="polygon-layer-toggle" checked>
+                    <label for="polygon-layer-toggle">
+                        <span class="layer-color polygon-color"></span>
+                        Veredas
+                    </label>
+                </div>
             </div>
-            <div class="layer-toggle">
-                <input type="checkbox" id="polyline2-layer-toggle" checked>
-                <label for="polyline2-layer-toggle">
-                    <span class="layer-color polyline2-color"></span>
-                    Ducto C2
-                </label>
-            </div>
-            <div class="layer-toggle">
-                <input type="checkbox" id="polyline3-layer-toggle" checked>
-                <label for="polyline3-layer-toggle">
-                    <span class="layer-color polyline3-color"></span>
-                    Ducto C3
-                </label>
-            </div>
-            <div class="layer-toggle">
-                <input type="checkbox" id="polyline4-layer-toggle" checked>
-                <label for="polyline4-layer-toggle">
-                    <span class="layer-color polyline4-color"></span>
-                    Ducto C4
-                </label>
-            </div>
-        
-            <div class="layer-toggle">
-                <input type="checkbox" id="polygon-layer-toggle" checked>
-                <label for="polygon-layer-toggle">
-                    <span class="layer-color polygon-color"></span>
-                    Veredas
-                </label>
-            </div> 
         </div>
-        
-        <div class="layer-control">
-            <h4>Mostrar/ocultar etiquetas</h4>
-            <div class="layer-toggle">
-                <input type="checkbox" id="point-labels-toggle">
-                <label for="point-labels-toggle">
-                    <i class="fa-regular fa-plus point-label-icon"></i>
-                    <!-- <i class="fas fa-map-marker-alt point-label-icon"></i> -->
-                    <!-- <span class="point-label-icon"></span> -->
-                    Etiquetas de Postes
-                </label>
+
+        <div class="control-section collapsible active">
+            <div class="section-header">
+                <h4>Etiquetas</h4>
+                <i class="fas fa-chevron-down"></i>
             </div>
-            <div class="layer-toggle">
-                <input type="checkbox" id="polyline-labels-toggle">
-                <label for="polyline-labels-toggle">
-                    <i class="fas fa-tag polyline-label-icon"></i>
-                    Etiquetas de Ducto
-                </label>
-            </div>
-            <div class="layer-toggle">
-                <input type="checkbox" id="polygon-labels-toggle">
-                <label for="polygon-labels-toggle">
-                    <i class="fas fa-tag polygon-label-icon"></i>
-                    Veredas
-                </label>
+            <div class="section-content compact">
+                <div class="layer-toggle">
+                    <input type="checkbox" id="point-labels-toggle">
+                    <label for="point-labels-toggle">
+                        <i class="fa-regular fa-plus point-label-icon"></i>
+                        Etiquetas de Postes
+                    </label>
+                </div>
+                <div class="layer-toggle">
+                    <input type="checkbox" id="polyline-labels-toggle">
+                    <label for="polyline-labels-toggle">
+                        <i class="fas fa-tag polyline-label-icon"></i>
+                        Etiquetas de Ducto
+                    </label>
+                </div>
+                <div class="layer-toggle">
+                    <input type="checkbox" id="polygon-labels-toggle">
+                    <label for="polygon-labels-toggle">
+                        <i class="fas fa-tag polygon-label-icon"></i>
+                        Veredas
+                    </label>
+                </div>
             </div>
         </div>
     </div>
-<!-- Add Show Coordinate-display -->
-<!-- Coordinate Display (will stay in bottom right) -->
+
+    <!-- Coordinate Display -->
     <div id="coordinate-display-container">
         <div id="coordinate-display">
             <span id="latitude">0°00'00.00"N</span>, 
@@ -185,16 +164,9 @@
             <option value="decimal">Decimal (4.000000°)</option>
         </select>
     </div>
-    <!-- Your map container -->
 
-
-    <!-- Leaflet JS -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    
-    <!-- Leaflet AJAX for GeoJSON loading -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet-ajax/2.1.0/leaflet.ajax.min.js"></script>
-    
-    <!-- Custom JS -->
     <script src="js/script.js"></script>
 </body>
 </html>

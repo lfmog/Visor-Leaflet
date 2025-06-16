@@ -72,14 +72,14 @@ const layers = {
 const pointLayers = [];
 
 // Base map toggles
-document.getElementById('base-street').addEventListener('change', function() {
+document.getElementById('base-street')?.addEventListener('change', function() {
     if (this.checked) {
         map.removeLayer(baseMaps["ESRI Satellite"]);
         map.addLayer(baseMaps["OpenStreetMap"]);
     }
 });
 
-document.getElementById('base-satellite').addEventListener('change', function() {
+document.getElementById('base-satellite')?.addEventListener('change', function() {
     if (this.checked) {
         map.removeLayer(baseMaps["OpenStreetMap"]);
         map.addLayer(baseMaps["ESRI Satellite"]);
@@ -161,49 +161,71 @@ map.on('zoomend', function() {
     });
 });
 
-// Panel controls
+// ==============================================
+// PANEL CONTROL FUNCTIONS
+// ==============================================
+
 const panel = document.getElementById('control-panel');
 const closeBtn = document.getElementById('close-panel-btn');
 const menuBtn = document.getElementById('mobile-menu-btn');
 
-// Close panel function
-function closePanel() {
-    panel.classList.remove('active');
-    document.body.classList.remove('panel-open');
+// Function to toggle panel visibility with animation
+function togglePanel(show) {
+    if (show) {
+        // Show panel - slide in from left
+        panel.style.transform = 'translateX(0)';
+        panel.style.display = 'block';
+        panel.classList.add('active');
+    } else {
+        // Hide panel - slide out to left
+        panel.style.transform = 'translateX(-100%)';
+        
+        // After animation completes, hide completely
+        setTimeout(() => {
+            panel.style.display = 'none';
+        }, 300); // Match this with your CSS transition duration
+        
+        panel.classList.remove('active');
+    }
 }
 
-// Set up close button
+// Initialize panel state
+togglePanel(false); // Start with panel hidden
+
+// Close button click handler
 closeBtn.addEventListener('click', function(e) {
     e.preventDefault();
     e.stopPropagation();
-    closePanel();
+    togglePanel(false); // Hide panel
 });
 
-// Set up menu button
+// Menu button click handler
 menuBtn.addEventListener('click', function(e) {
     e.stopPropagation();
-    panel.classList.toggle('active');
-    document.body.classList.toggle('panel-open', panel.classList.contains('active'));
+    togglePanel(true); // Show panel
 });
 
-// Close when clicking outside
+// Close when clicking outside panel
 document.addEventListener('click', function(e) {
     if (panel.classList.contains('active') && 
         !panel.contains(e.target) && 
         e.target !== menuBtn && 
         !menuBtn.contains(e.target)) {
-        closePanel();
+        togglePanel(false);
     }
 });
 
 // Close with ESC key
 document.addEventListener('keydown', function(e) {
     if (e.key === 'Escape' && panel.classList.contains('active')) {
-        closePanel();
+        togglePanel(false);
     }
 });
 
-// Layer toggles
+// ==============================================
+// LAYER TOGGLES
+// ==============================================
+
 function setupToggle(id, layer) {
     document.getElementById(id)?.addEventListener('change', (e) => {
         e.target.checked ? map.addLayer(layer) : map.removeLayer(layer);
@@ -220,7 +242,10 @@ setupToggle('point-labels-toggle', layers.pointLabels);
 setupToggle('polyline-labels-toggle', layers.polylineLabels);
 setupToggle('polygon-labels-toggle', layers.polygonLabels);
 
-// Collapsible sections
+// ==============================================
+// COLLAPSIBLE SECTIONS
+// ==============================================
+
 document.querySelectorAll('.control-section.collapsible').forEach(section => {
     const header = section.querySelector('.section-header');
     const content = section.querySelector('.section-content');
@@ -234,8 +259,12 @@ document.querySelectorAll('.control-section.collapsible').forEach(section => {
     });
 });
 
-// Measurement tool
-const measureControl = {
+// ==============================================
+// MEASUREMENT TOOL
+// ==============================================
+
+// Improved measurement tool implementation
+let measureControl = {
     isMeasuring: false,
     currentPolyline: null,
     totalDistance: 0,
@@ -243,10 +272,15 @@ const measureControl = {
     measureTooltips: [],
 
     start: function() {
+        // Clear any previous measurements
         this.clearMeasurement();
+        
         this.isMeasuring = true;
         document.getElementById('measure-toggle').classList.add('active');
         document.getElementById('measure-result').style.display = 'block';
+        document.getElementById('measure-value').textContent = '0';
+        
+        // Start with first click
         map.on('click', this.handleMeasureClick);
     },
 
@@ -259,55 +293,78 @@ const measureControl = {
     },
 
     handleMeasureClick: function(e) {
-        this.measurePoints.push(e.latlng);
+        if (!measureControl.isMeasuring) return;
         
-        if (this.measurePoints.length > 1) {
-            if (!this.currentPolyline) {
-                this.currentPolyline = L.polyline([], {
+        // Add point to current measurement
+        measureControl.measurePoints.push(e.latlng);
+        
+        // Update or create polyline
+        if (measureControl.measurePoints.length > 1) {
+            if (!measureControl.currentPolyline) {
+                measureControl.currentPolyline = L.polyline([], {
                     color: 'red',
-                    weight: 3,
-                    dashArray: '5, 5'
+                    weight: 3
                 }).addTo(map);
             }
-            this.currentPolyline.setLatLngs(this.measurePoints);
+            measureControl.currentPolyline.setLatLngs(measureControl.measurePoints);
             
-            const lastSegmentDistance = this.measurePoints[this.measurePoints.length-2]
-                .distanceTo(this.measurePoints[this.measurePoints.length-1]) / 1000;
-            this.totalDistance += lastSegmentDistance;
+            // Calculate and display distance
+            const lastSegmentDistance = measureControl.measurePoints[measureControl.measurePoints.length-2]
+                .distanceTo(measureControl.measurePoints[measureControl.measurePoints.length-1]) / 1000;
+            measureControl.totalDistance += lastSegmentDistance;
             
-            document.getElementById('measure-value').textContent = this.totalDistance.toFixed(2);
+            document.getElementById('measure-value').textContent = measureControl.totalDistance.toFixed(2);
             
+            // Add tooltip for this segment
             const tooltip = L.tooltip({
                 permanent: true,
                 direction: 'top',
                 className: 'measure-tooltip',
-                content: `${lastSegmentDistance.toFixed(2)} km<br>Total: ${this.totalDistance.toFixed(2)} km`
+                content: `${lastSegmentDistance.toFixed(2)} km<br>Total: ${measureControl.totalDistance.toFixed(2)} km`
             }).setLatLng(e.latlng);
             
             tooltip.addTo(map);
-            this.measureTooltips.push(tooltip);
+            measureControl.measureTooltips.push(tooltip);
         }
     },
 
     clearMeasurement: function() {
-        if (this.currentPolyline) map.removeLayer(this.currentPolyline);
+        // Remove existing polyline
+        if (this.currentPolyline) {
+            map.removeLayer(this.currentPolyline);
+            this.currentPolyline = null;
+        }
+        
+        // Remove all tooltips
         this.measureTooltips.forEach(tooltip => map.removeLayer(tooltip));
-        this.currentPolyline = null;
         this.measureTooltips = [];
+        
+        // Reset measurements
         this.measurePoints = [];
         this.totalDistance = 0;
     }
 };
 
+// Toggle measurement tool
 document.getElementById('measure-toggle').addEventListener('click', function() {
-    measureControl.isMeasuring ? measureControl.stop() : measureControl.start();
+    if (measureControl.isMeasuring) {
+        measureControl.stop();
+    } else {
+        measureControl.start();
+    }
 });
 
+// Add right-click to finish measurement
 map.on('contextmenu', function() {
-    if (measureControl.isMeasuring) measureControl.stop();
+    if (measureControl.isMeasuring) {
+        measureControl.stop();
+    }
 });
 
-// Coordinate display
+// ==============================================
+// COORDINATE DISPLAY
+// ==============================================
+
 let coordFormat = 'dms';
 
 function decimalToDMS(decimal, isLongitude) {
@@ -344,19 +401,22 @@ document.getElementById('coord-format').addEventListener('change', (e) => {
 // Initialize coordinate display
 updateCoordinateDisplay(map.getCenter());
 
-// Legend
-const legend = L.control({ position: 'bottomright' });
-legend.onAdd = function() {
-    const div = L.DomUtil.create('div', 'legend');
-    div.innerHTML = `
-        <h4>Leyenda</h4>
-        <div><i style="background:${styles.polyline1.color}"></i> Ducto C1</div>
-        <div><i style="background:${styles.polyline2.color}"></i> Ducto C2</div>
-        <div><i style="background:${styles.polyline3.color}"></i> Ducto C3</div>
-        <div><i style="background:${styles.polyline4.color}"></i> Ducto C4</div>
-        <div><i style="background:${styles.polygon.fillColor}"></i> Veredas</div>
-        <div><i class="fa-regular fa-plus" style="color:#EE8C0B"></i> Edificaciones</div>
-    `;
-    return div;
-};
+// ==============================================
+// LEGEND
+// ==============================================
+
+// const legend = L.control({ position: 'bottomright' });
+// legend.onAdd = function() {
+//     const div = L.DomUtil.create('div', 'legend');
+//     div.innerHTML = `
+//         <h4>Leyenda</h4>
+//         <div><i style="background:${styles.polyline1.color}"></i> Ducto C1</div>
+//         <div><i style="background:${styles.polyline2.color}"></i> Ducto C2</div>
+//         <div><i style="background:${styles.polyline3.color}"></i> Ducto C3</div>
+//         <div><i style="background:${styles.polyline4.color}"></i> Ducto C4</div>
+//         <div><i style="background:${styles.polygon.fillColor}"></i> Veredas</div>
+//         <div><i class="fa-regular fa-plus" style="color:#EE8C0B"></i> Edificaciones</div>
+//     `;
+//     return div;
+// };
 legend.addTo(map);

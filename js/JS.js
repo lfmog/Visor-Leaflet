@@ -79,7 +79,6 @@ document.getElementById('base-street')?.addEventListener('change', function() {
     }
 });
 
-
 document.getElementById('base-satellite')?.addEventListener('change', function() {
     if (this.checked) {
         map.removeLayer(baseMaps["OpenStreetMap"]);
@@ -87,9 +86,10 @@ document.getElementById('base-satellite')?.addEventListener('change', function()
     }
 });
 
+// GeoJSON loader
 const allPolylineFeatures = [];
 const allFeatures = [];
-// GeoJSON loader
+
 function loadGeoJSON(url, layer, style, labelField, layerType = 'polygon') {
     fetch(url)
         .then(response => response.json())
@@ -112,8 +112,15 @@ function loadGeoJSON(url, layer, style, labelField, layerType = 'polygon') {
                     return L.circleMarker(latlng, style);
                 },
                 style: style,
-                onEachFeature: (feature, layer) => {
-                    layer.feature = feature; // ✅ Critical line
+                onEachFeature: (feature, lyr) => {
+                    lyr.feature = feature;
+                    feature.layer = lyr;
+                    feature.layerType = layerType;
+                    allFeatures.push(feature);
+
+                    if (layerType === 'polyline') {
+                        allPolylineFeatures.push(feature);
+                    }
 
                     if (feature.properties) {
                         let popupContent = '<div class="info"><h4>Información</h4>';
@@ -121,53 +128,42 @@ function loadGeoJSON(url, layer, style, labelField, layerType = 'polygon') {
                             popupContent += `<b>${prop}:</b> ${feature.properties[prop]}<br>`;
                         }
                         popupContent += '</div>';
-                        layer.bindPopup(popupContent);
+                        lyr.bindPopup(popupContent);
                     }
 
                     if (labelField && feature.properties?.[labelField]) {
-                        const position = layer.getBounds?.().getCenter() || layer.getLatLng();
-                        const labelColor = layerType === 'polygon' ? '#000307' : 
-                                        layerType === 'polyline' ? style.color : '#ff0000';
+                        const position = lyr.getBounds?.().getCenter() || lyr.getLatLng();
+                        const labelColor = style.color || '#000';
 
                         const label = L.marker(position, {
                             icon: L.divIcon({
                                 className: 'map-label',
-                                html: `<div style="font-size:12px;font-weight:bold;color:${labelColor};
-                                    text-shadow:-1px -1px 0 #fff,1px -1px 0 #fff,-1px 1px 0 #fff,1px 1px 0 #fff;">
-                                    ${feature.properties[labelField]}</div>`,
-                                iconSize: [100, 20],
-                                pane: 'labels'
+                                html: `<div style="color:${labelColor}; font-weight:bold;">${feature.properties[labelField]}</div>`
                             }),
                             interactive: false
                         });
 
                         const labelLayer = layerType === 'polygon' ? layers.polygonLabels :
-                                        layerType === 'polyline' ? layers.polylineLabels :
-                                        layers.pointLabels;
+                                            layerType === 'polyline' ? layers.polylineLabels :
+                                            layers.pointLabels;
 
                         labelLayer.addLayer(label);
                     }
                 }
             });
 
-            geojson.eachLayer(l => {
-                layer.addLayer(l);
-                if (layerType === 'polyline' && l.feature) {
-                    allPolylineFeatures.push(l.feature);
-                    }
-            }
-        );
-    })
-     .catch(err => console.error('Error loading', url, err));
+            geojson.addTo(layer);
+        })
+        .catch(err => console.error('Error loading', url, err));
 }
 
 // Load GeoJSON data
-loadGeoJSON('geojs/Edificacion_Cor_D2.geojson', layers.point, {}, 'PK', 'point');
-loadGeoJSON('geojs/Ducto_C1.geojson', layers.polyline1, styles.polyline1, 'TRAMO', 'polyline');
-loadGeoJSON('geojs/Ducto_C2.geojson', layers.polyline2, styles.polyline2, 'TRM_RML', 'polyline');
-loadGeoJSON('geojs/Ducto C3.geojson', layers.polyline3, styles.polyline3, 'TRM_RML', 'polyline');
-// loadGeoJSON('geojs/Ducto_Turno4_Adicional.geojson', layers.polyline4, styles.polyline4, 'TRM_RML', 'polyline');
-loadGeoJSON('geojs/Veredas300.geojson', layers.polygon, styles.polygon, 'VEREDA', 'polygon');
+loadGeoJSON('geojs/Puntos.geojson', layers.point, {}, 'P', 'point');
+loadGeoJSON('geojs/Linea C1.geojson', layers.polyline1, styles.polyline1, 'TRAMO', 'polyline');
+loadGeoJSON('geojs/Linea C2.geojson', layers.polyline2, styles.polyline2, 'TRM', 'polyline');
+loadGeoJSON('geojs/Linea C3.geojson', layers.polyline3, styles.polyline3, 'TRM', 'polyline');
+loadGeoJSON('geojs/Linea C4.geojson', layers.polyline4, styles.polyline4, 'TRM', 'polyline');
+loadGeoJSON('geojs/Veredas.geojson', layers.polygon, styles.polygon, 'VEREDA', 'polygon');
 
 // Update point icons on zoom
 map.on('zoomend', function() {
@@ -377,63 +373,8 @@ map.on('contextmenu', function() {
     }
 });
 
-// ==============================================
-// Statistics Dashboards
-// ==============================================
-const statsControl = {
-    calculate: function() {
-        const layer = document.getElementById('stats-layer-select').value;
-        const groupField = document.getElementById('stats-field-select').value;
 
-        let features = [];
-        if (layer === 'all') {
-            features = allPolylineFeatures;
-        } else {
-            features = layers[layer].getLayers().map(l => l.feature).filter(f => f);
-        }
 
-        const result = {};
-        let total = 0;
-
-        for (const feat of features) {
-            if (!feat?.properties) continue;
-            const group = feat.properties[groupField] || 'Sin valor';
-            const length = parseFloat(feat.properties.LONGITUD) || 0;
-
-            if (!result[group]) {
-                result[group] = { count: 0, length: 0 };
-            }
-            result[group].count++;
-            result[group].length += length;
-            total += length;
-        }
-
-        // Render output
-        const container = document.getElementById('stats-summary');
-        container.innerHTML = `<h4>Resumen por ${groupField}</h4>
-            <p>Total elementos: ${features.length}</p>
-            <p>Longitud total: ${total.toFixed(2)} km</p>`;
-
-        for (const [key, val] of Object.entries(result)) {
-            container.innerHTML += `<div class='group-stats'>
-                <h5>${key}</h5>
-                <p>Cantidad: ${val.count}</p>
-                <p>Longitud total: ${val.length.toFixed(2)} km</p>
-                <p>Promedio: ${(val.length / val.count).toFixed(2)} km</p>
-                <p>% del total: ${(val.length * 100 / total).toFixed(1)}%</p>
-            </div>`;
-        }
-    }
-};
-
-// === Hook UI Buttons ===
-document.getElementById('apply-stats-btn').addEventListener('click', () => statsControl.calculate());
-document.getElementById('stats-toggle').addEventListener('click', () => {
-    document.getElementById('stats-panel').classList.toggle('active');
-});
-
-// === Init Automatically ===
-setTimeout(() => statsControl.calculate(), 2000);
 
 // ==============================================
 // COORDINATE DISPLAY
@@ -475,22 +416,5 @@ document.getElementById('coord-format').addEventListener('change', (e) => {
 // Initialize coordinate display
 updateCoordinateDisplay(map.getCenter());
 
-// ==============================================
-// LEGEND
-// ==============================================
 
-// const legend = L.control({ position: 'bottomright' });
-// legend.onAdd = function() {
-//     const div = L.DomUtil.create('div', 'legend');
-//     div.innerHTML = `
-//         <h4>Leyenda</h4>
-//         <div><i style="background:${styles.polyline1.color}"></i> Ducto C1</div>
-//         <div><i style="background:${styles.polyline2.color}"></i> Ducto C2</div>
-//         <div><i style="background:${styles.polyline3.color}"></i> Ducto C3</div>
-//         <div><i style="background:${styles.polyline4.color}"></i> Ducto C4</div>
-//         <div><i style="background:${styles.polygon.fillColor}"></i> Veredas</div>
-//         <div><i class="fa-regular fa-plus" style="color:#EE8C0B"></i> Edificaciones</div>
-//     `;
-//     return div;
-// };
 legend.addTo(map);

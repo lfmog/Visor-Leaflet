@@ -36,6 +36,7 @@
             <div class="section-header">
                 <h4>Herramientas</h4>
                 <i class="fas fa-chevron-down"></i>
+                
             </div>
             <div class="section-content">
                 <!-- Measure Tool -->
@@ -47,6 +48,7 @@
                         <span>Distancia total:</span> <span id="measure-value">0</span> km
                     </div>
                 </div>
+            
                 <!-- Dashboard Statistics -->
                 <div class="layer-toggle">
                     <button id="stats-toggle" class="control-btn" type="button">
@@ -62,9 +64,9 @@
                                 <option value="polyline4">Linea C4</option>
                             </select>
                             <select id="stats-field-select">
-                                <option value="GASODUCTO">GASODUCTO</option>
-                                <option value="DISTRITO">DISTRITO</option>
-                                <option value="TRM_RML">TRAMO</option>
+                                <option value="Tipo_Via">Tipo de Vía</option>
+                                <option value="Municipio">Municipio</option>
+                                <option value="Departamento">Departamento</option>
                             </select>
                             <button id="apply-stats-btn">Aplicar</button>
                         </div>
@@ -73,7 +75,6 @@
                 </div>
             </div>
         </div>
-
         <div class="control-section collapsible active">
             <div class="section-header">
                 <h4>Mapa Base</h4>
@@ -105,35 +106,35 @@
                     <input type="checkbox" id="point-layer-toggle" checked>
                     <label for="point-layer-toggle">
                         <span class="layer-color point-color"></span>
-                        Edificaciones
+                        Puntos
                     </label>
                 </div>
                 <div class="layer-toggle">
                     <input type="checkbox" id="polyline1-layer-toggle" checked>
                     <label for="polyline1-layer-toggle">
                         <span class="layer-color polyline1-color"></span>
-                        Ducto C1
+                        Linea C1
                     </label>
                 </div>
                 <div class="layer-toggle">
                     <input type="checkbox" id="polyline2-layer-toggle" checked>
                     <label for="polyline2-layer-toggle">
                         <span class="layer-color polyline2-color"></span>
-                        Ducto C2
+                        Linea C2
                     </label>
                 </div>
                 <div class="layer-toggle">
                     <input type="checkbox" id="polyline3-layer-toggle" checked>
                     <label for="polyline3-layer-toggle">
                         <span class="layer-color polyline3-color"></span>
-                        Ducto C3
+                        Linea C3
                     </label>
                 </div>
                 <div class="layer-toggle">
                     <input type="checkbox" id="polyline4-layer-toggle" checked>
                     <label for="polyline4-layer-toggle">
                         <span class="layer-color polyline4-color"></span>
-                        Ducto C4
+                        Linea C4
                     </label>
                 </div>
                 <div class="layer-toggle">
@@ -156,14 +157,14 @@
                     <input type="checkbox" id="point-labels-toggle">
                     <label for="point-labels-toggle">
                         <i class="fa-regular fa-plus point-label-icon"></i>
-                        Etiquetas de Postes
+                        Etiquetas de Puntos
                     </label>
                 </div>
                 <div class="layer-toggle">
                     <input type="checkbox" id="polyline-labels-toggle">
                     <label for="polyline-labels-toggle">
                         <i class="fas fa-tag polyline-label-icon"></i>
-                        Etiquetas de Ducto
+                        Etiquetas de Linea
                     </label>
                 </div>
                 <div class="layer-toggle">
@@ -190,9 +191,7 @@
     </div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script> <!-- Optional for future charting -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet-ajax/2.1.0/leaflet.ajax.min.js"></script>
     <script src="js/script.js"></script>
-    
 </body>
 </html>

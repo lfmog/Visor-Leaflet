@@ -112,8 +112,11 @@ function loadGeoJSON(url, layer, style, labelField, layerType = 'polygon') {
                     return L.circleMarker(latlng, style);
                 },
                 style: style,
-                onEachFeature: (feature, layer) => {
-                    layer.feature = feature; // ✅ Critical line
+                onEachFeature: (feature, lyr) => {
+                    lyr.feature = feature;
+                    feature.layer = lyr;
+                    feature.layerType = layerType;
+                    allFeatures.push(feature);
 
                     if (feature.properties) {
                         let popupContent = '<div class="info"><h4>Información</h4>';
@@ -121,29 +124,24 @@ function loadGeoJSON(url, layer, style, labelField, layerType = 'polygon') {
                             popupContent += `<b>${prop}:</b> ${feature.properties[prop]}<br>`;
                         }
                         popupContent += '</div>';
-                        layer.bindPopup(popupContent);
+                        lyr.bindPopup(popupContent);
                     }
 
                     if (labelField && feature.properties?.[labelField]) {
-                        const position = layer.getBounds?.().getCenter() || layer.getLatLng();
-                        const labelColor = layerType === 'polygon' ? '#000307' : 
-                                        layerType === 'polyline' ? style.color : '#ff0000';
+                        const position = lyr.getBounds?.().getCenter() || lyr.getLatLng();
+                        const labelColor = style.color || '#000';
 
                         const label = L.marker(position, {
                             icon: L.divIcon({
                                 className: 'map-label',
-                                html: `<div style="font-size:12px;font-weight:bold;color:${labelColor};
-                                    text-shadow:-1px -1px 0 #fff,1px -1px 0 #fff,-1px 1px 0 #fff,1px 1px 0 #fff;">
-                                    ${feature.properties[labelField]}</div>`,
-                                iconSize: [100, 20],
-                                pane: 'labels'
+                                html: `<div style="color:${labelColor}; font-weight:bold;">${feature.properties[labelField]}</div>`
                             }),
                             interactive: false
                         });
 
                         const labelLayer = layerType === 'polygon' ? layers.polygonLabels :
-                                        layerType === 'polyline' ? layers.polylineLabels :
-                                        layers.pointLabels;
+                                            layerType === 'polyline' ? layers.polylineLabels :
+                                            layers.pointLabels;
 
                         labelLayer.addLayer(label);
                     }
@@ -154,11 +152,10 @@ function loadGeoJSON(url, layer, style, labelField, layerType = 'polygon') {
                 layer.addLayer(l);
                 if (layerType === 'polyline' && l.feature) {
                     allPolylineFeatures.push(l.feature);
-                    }
-            }
-        );
-    })
-     .catch(err => console.error('Error loading', url, err));
+                }
+            });
+        })
+        .catch(err => console.error('Error loading', url, err));
 }
 
 // Load GeoJSON data
@@ -380,61 +377,113 @@ map.on('contextmenu', function() {
 // ==============================================
 // Statistics Dashboards
 // ==============================================
+
 const statsControl = {
-    calculate: function() {
+    calculate: function () {
         const layer = document.getElementById('stats-layer-select').value;
         const groupField = document.getElementById('stats-field-select').value;
+        const attributeFilter = document.getElementById('attribute-filter').value.trim().toLowerCase();
+        const minLength = parseFloat(document.getElementById('min-length')?.value) || 0;
+        const maxLength = parseFloat(document.getElementById('max-length')?.value) || Infinity;
 
-        let features = [];
-        if (layer === 'all') {
-            features = allPolylineFeatures;
-        } else {
-            features = layers[layer].getLayers().map(l => l.feature).filter(f => f);
-        }
+        let features = layer === 'all'
+            ? allPolylineFeatures
+            : layers[layer].getLayers().map(l => l.feature).filter(f => f);
 
         const result = {};
         let total = 0;
 
         for (const feat of features) {
             if (!feat?.properties) continue;
-            const group = feat.properties[groupField] || 'Sin valor';
-            const length = parseFloat(feat.properties.LONGITUD) || 0;
 
+            if (attributeFilter) {
+                const values = Object.values(feat.properties).map(v => String(v).toLowerCase());
+                const match = values.some(v => v.includes(attributeFilter));
+                if (!match) continue;
+            }
+
+            const length = parseFloat(feat.properties.LONGITUD) || 0;
+            if (length < minLength || length > maxLength) continue;
+
+            const group = feat.properties[groupField] || 'Sin valor';
             if (!result[group]) {
                 result[group] = { count: 0, length: 0 };
             }
+
             result[group].count++;
             result[group].length += length;
             total += length;
         }
 
-        // Render output
         const container = document.getElementById('stats-summary');
         container.innerHTML = `<h4>Resumen por ${groupField}</h4>
-            <p>Total elementos: ${features.length}</p>
-            <p>Longitud total: ${total.toFixed(2)} km</p>`;
+          <p>Total elementos: ${Object.values(result).reduce((s, r) => s + r.count, 0)}</p>
+          <p>Longitud total: ${total.toFixed(2)} km</p>`;
 
         for (const [key, val] of Object.entries(result)) {
+            const avg = val.length / val.count;
+            const percent = (val.length * 100 / total).toFixed(1);
+
             container.innerHTML += `<div class='group-stats'>
-                <h5>${key}</h5>
-                <p>Cantidad: ${val.count}</p>
-                <p>Longitud total: ${val.length.toFixed(2)} km</p>
-                <p>Promedio: ${(val.length / val.count).toFixed(2)} km</p>
-                <p>% del total: ${(val.length * 100 / total).toFixed(1)}%</p>
+              <h5>${key}</h5>
+              <p>Cantidad: ${val.count}</p>
+              <p>Longitud total: ${val.length.toFixed(2)} km</p>
+              <p>Promedio: ${avg.toFixed(2)} km</p>
+              <p>% del total: ${percent}%</p>
             </div>`;
         }
+
+        this.exportData = result;
+    },
+
+    exportToExcel: function () {
+        const ws_data = [
+            ['Grupo', 'Cantidad', 'Longitud total (km)', 'Promedio (km)']
+        ];
+
+        for (const [key, val] of Object.entries(this.exportData)) {
+            ws_data.push([
+                key,
+                val.count,
+                parseFloat(val.length.toFixed(2)),
+                parseFloat((val.length / val.count).toFixed(2))
+            ]);
+        }
+
+        const ws = XLSX.utils.aoa_to_sheet(ws_data);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, 'Estadísticas');
+        XLSX.writeFile(wb, 'estadisticas.xlsx');
     }
 };
 
-// === Hook UI Buttons ===
 document.getElementById('apply-stats-btn').addEventListener('click', () => statsControl.calculate());
 document.getElementById('stats-toggle').addEventListener('click', () => {
     document.getElementById('stats-panel').classList.toggle('active');
 });
+document.getElementById('export-stats-btn').addEventListener('click', () => statsControl.exportToExcel());
 
-// === Init Automatically ===
-setTimeout(() => statsControl.calculate(), 2000);
+function populateAttributeSuggestions() {
+  const datalist = document.getElementById('attribute-suggestions');
+  const seen = new Set();
 
+  allPolylineFeatures.forEach(feature => {
+    Object.values(feature.properties).forEach(value => {
+      const str = String(value).trim();
+      if (str.length > 0 && !seen.has(str)) {
+        seen.add(str);
+        const option = document.createElement('option');
+        option.value = str;
+        datalist.appendChild(option);
+      }
+    });
+  });
+}
+
+setTimeout(() => {
+  statsControl.calculate();
+  populateAttributeSuggestions();
+}, 2000);
 // ==============================================
 // COORDINATE DISPLAY
 // ==============================================

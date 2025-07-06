@@ -389,3 +389,38 @@ body {
     margin-top: 10px;
     padding-top: 6px;
 }
+
+.stats-panel {
+  display: none;
+  background: #f9f9f9;
+  padding: 10px;
+  margin-top: 10px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  max-height: 460px;
+  overflow-y: auto;
+}
+.stats-panel.active {
+  display: block;
+}
+.stats-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 10px;
+  align-items: center;
+}
+.stats-filters select,
+.stats-filters input,
+.stats-filters button {
+  padding: 4px 6px;
+  font-size: 13px;
+}
+#stats-summary {
+  font-size: 13px;
+}
+.group-stats {
+  border-top: 1px solid #ddd;
+  margin-top: 10px;
+  padding-top: 6px;
+}

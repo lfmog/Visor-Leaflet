@@ -66,9 +66,27 @@
                                 <option value="DISTRITO">DISTRITO</option>
                                 <option value="TRM_RML">TRAMO</option>
                             </select>
-                            <button id="apply-stats-btn">Aplicar</button>
+                            <div class="stats-filters">
+                                <select id="stats-layer-select">
+                                    <option value="all">Todas las capas</option>
+                                    <option value="polyline1">Linea C1</option>
+                                    <option value="polyline2">Linea C2</option>
+                                    <option value="polyline3">Linea C3</option>
+                                    <option value="polyline4">Linea C4</option>
+                                </select>
+                                <select id="stats-field-select">
+                                    <option value="GASODUCTO">Gasoducto</option>
+                                    <option value="DISTRITO">Distrito</option>
+                                    <option value="TRM_RML">Tramo</option>
+                                </select>
+                                <input type="text" id="attribute-filter" placeholder="Filtrar por valor" list="attribute-suggestions" style="width: 200px;" />
+                                <datalist id="attribute-suggestions"></datalist>
+                                <button id="apply-stats-btn">Aplicar</button>
+                                <button id="export-stats-btn" title="Exportar a Excel"><i class="fas fa-file-export"></i></button>
+                            </div>
                         </div>
                         <div id="stats-summary"></div>
+                        <canvas id="stats-chart" height="180"></canvas>
                     </div>
                 </div>
             </div>
@@ -190,8 +208,9 @@
     </div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script> <!-- Optional for future charting -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet-ajax/2.1.0/leaflet.ajax.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <script src="js/script.js"></script>
     
 </body>

@@ -19,15 +19,15 @@ const baseMaps = {
         attribution: '&copy; OpenStreetMap contributors',
         pane: 'tilePane'
     }),
-    "ESRI Satellite": L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+  /*   "ESRI Satellite": L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
         attribution: 'Tiles &copy; Esri',
         pane: 'tilePane'
-    })
+    }) */
 };
+
 
 // Add default base map
 baseMaps["OpenStreetMap"].addTo(map);
-
 // Layer styles
 const styles = {
     point: {
@@ -542,4 +542,4 @@ updateCoordinateDisplay(map.getCenter());
 //     `;
 //     return div;
 // };
-legend.addTo(map);
+/* legend.addTo(map); */

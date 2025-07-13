@@ -4,22 +4,30 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Visor GIS Colombia</title>
+    <title>Visor SIGNUM </title>
+    <!-- Favicon -->
+    <link rel="icon" href="favicon/favicon.ico" sizes="any">
+    <link rel="icon" href="favicon/favicon.svg" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="favicon/apple-touch-icon.png">
+    <link rel="icon" type="image/png" href="favicon/favicon-32x32.png" sizes="32x32">
+    <link rel="icon" type="image/png" href="favicon/favicon-16x16.png" sizes="16x16">
+    <link rel="manifest" href="favicon/site.webmanifest">
+    <meta name="msapplication-TileColor" content="#ffffff">
+    <meta name="theme-color" content="#ffffff">
+
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
     <div id="map"></div>
-    
+
     <!-- Mobile Controls -->
     <div class="mobile-controls">
         <button id="mobile-menu-btn" class="mobile-btn" type="button">
             <i class="fas fa-layer-group"></i> Capas
         </button>
-        <!-- <button id="mobile-search-btn" class="mobile-btn" type="button">
-            <i class="fas fa-search"></i>
-        </button> -->
+
     </div>
 
     <!-- Main Control Panel -->
@@ -36,7 +44,16 @@
             <div class="section-header">
                 <h4>Herramientas</h4>
                 <i class="fas fa-chevron-down"></i>
-                
+            </div>
+            <div class="section-content">
+                <!-- Search Control -->
+                <div class="layer-toggle">
+                    <div id="search-control" class="search-control">
+                        <input type="text" id="search-input" placeholder="Buscar...">
+                        <button id="search-button"><i class="fas fa-search"></i></button>
+                        <div id="search-results"></div>
+                    </div>
+                </div>
             </div>
             <div class="section-content">
                 <!-- Measure Tool -->
@@ -48,7 +65,6 @@
                         <span>Distancia total:</span> <span id="measure-value">0</span> km
                     </div>
                 </div>
-            
                 <!-- Dashboard Statistics -->
                 <div class="layer-toggle">
                     <button id="stats-toggle" class="control-btn" type="button">
@@ -58,23 +74,34 @@
                         <div class="stats-filters">
                             <select id="stats-layer-select">
                                 <option value="all">Todas las capas</option>
-                                <option value="polyline1">Linea C1</option>
-                                <option value="polyline2">Linea C2</option>
-                                <option value="polyline3">Linea C3</option>
-                                <option value="polyline4">Linea C4</option>
+                                <option value="polyline1">Linea1</option>
+                                <option value="polyline2">Linea2</option>
+                                <option value="polyline3">Linea3</option>
+                                <option value="polyline4">Linea4</option>
+                                <option value="polyline5">Linea5</option>
+                                <option value="polyline6">Linea6</option>
                             </select>
                             <select id="stats-field-select">
-                                <option value="Tipo_Via">Tipo de Vía</option>
-                                <option value="Municipio">Municipio</option>
-                                <option value="Departamento">Departamento</option>
+                                <option value="Campo1">Campo1</option>
+                                <option value="Campo2">Campo2</option>
+                                <option value="Campo3">Campo3</option>
                             </select>
-                            <button id="apply-stats-btn">Aplicar</button>
+                            <div class="stats-filters">
+<!--                                 <select id="stats-layer-select">
+                                </select> --> -->
+                                <input type="text" id="attribute-filter" placeholder="Filtrar por valor" list="attribute-suggestions" style="width: 200px;" />
+                                <datalist id="attribute-suggestions"></datalist>
+                                <button id="apply-stats-btn">Aplicar</button>
+                                <button id="export-stats-btn" title="Exportar a Excel"><i class="fas fa-file-export"></i></button>
+                            </div>
                         </div>
                         <div id="stats-summary"></div>
+                        <canvas id="stats-chart" height="180"></canvas>
                     </div>
                 </div>
             </div>
         </div>
+
         <div class="control-section collapsible active">
             <div class="section-header">
                 <h4>Mapa Base</h4>
@@ -102,47 +129,90 @@
                 <i class="fas fa-chevron-down"></i>
             </div>
             <div class="section-content compact">
-                <div class="layer-toggle">
+                <!-- <div class="layer-toggle">
                     <input type="checkbox" id="point-layer-toggle" checked>
                     <label for="point-layer-toggle">
                         <span class="layer-color point-color"></span>
-                        Puntos
+                        Edificaciones
                     </label>
-                </div>
+                </div> -->
                 <div class="layer-toggle">
                     <input type="checkbox" id="polyline1-layer-toggle" checked>
                     <label for="polyline1-layer-toggle">
                         <span class="layer-color polyline1-color"></span>
-                        Linea C1
+                        Linea1
                     </label>
                 </div>
                 <div class="layer-toggle">
                     <input type="checkbox" id="polyline2-layer-toggle" checked>
                     <label for="polyline2-layer-toggle">
                         <span class="layer-color polyline2-color"></span>
-                        Linea C2
+                        Linea2
                     </label>
                 </div>
                 <div class="layer-toggle">
                     <input type="checkbox" id="polyline3-layer-toggle" checked>
                     <label for="polyline3-layer-toggle">
                         <span class="layer-color polyline3-color"></span>
-                        Linea C3
+                        Linea3
                     </label>
                 </div>
+
                 <div class="layer-toggle">
                     <input type="checkbox" id="polyline4-layer-toggle" checked>
                     <label for="polyline4-layer-toggle">
                         <span class="layer-color polyline4-color"></span>
-                        Linea C4
+                        Linea4
                     </label>
                 </div>
                 <div class="layer-toggle">
-                    <input type="checkbox" id="polygon-layer-toggle" checked>
-                    <label for="polygon-layer-toggle">
-                        <span class="layer-color polygon-color"></span>
-                        Veredas
+                    <input type="checkbox" id="polyline5-layer-toggle" checked>
+                    <label for="polyline5-layer-toggle">
+                        <span class="layer-color polyline5-color"></span>
+                        Linea5
                     </label>
+                </div>
+                <div class="layer-toggle">
+                    <input type="checkbox" id="polyline6-layer-toggle" checked>
+                    <label for="polyline6-layer-toggle">
+                        <span class="layer-color polyline6-color"></span>
+                        Linea6
+                    </label>
+                </div>
+            </div>
+        </div>
+        <div class="control-section collapsible not-active">
+            <div class="section-header">
+                <h4>Info Base</h4>
+                <i class="fas fa-chevron-down"></i>
+            </div>
+            <div class="section-content compact">
+                <div class="layer-toggle">
+                <input type="checkbox" id="veredas-layer-toggle">
+                <label for="veredas-layer-toggle">
+                    <span class="layer-color polygon-color"></span> Veredas
+                </label>
+                </div>
+                <div class="layer-toggle">
+                <input type="checkbox" id="municipios-layer-toggle">
+                <label for="municipios-layer-toggle">
+                    <span class="layer-color polygon-color"></span> Municipios
+                </label>
+                </div>
+            </div>
+            </div>
+
+            <div class="control-section collapsible not-active">
+            <div class="section-header">
+                <h4>Procesos</h4>
+                <i class="fas fa-chevron-down"></i>
+            </div>
+            <div class="section-content compact">
+                <div class="layer-toggle">
+                <input type="checkbox" id="procesos-layer-toggle">
+                <label for="procesos-layer-toggle">
+                    <span class="layer-color point-color"></span> Puntos de Procesos
+                </label>
                 </div>
             </div>
         </div>
@@ -153,13 +223,8 @@
                 <i class="fas fa-chevron-down"></i>
             </div>
             <div class="section-content compact">
-                <div class="layer-toggle">
-                    <input type="checkbox" id="point-labels-toggle">
-                    <label for="point-labels-toggle">
-                        <i class="fa-regular fa-plus point-label-icon"></i>
-                        Etiquetas de Puntos
-                    </label>
-                </div>
+                <!-- <div class="layer-toggle">
+                </div> -->
                 <div class="layer-toggle">
                     <input type="checkbox" id="polyline-labels-toggle">
                     <label for="polyline-labels-toggle">
@@ -167,13 +232,8 @@
                         Etiquetas de Linea
                     </label>
                 </div>
-                <div class="layer-toggle">
-                    <input type="checkbox" id="polygon-labels-toggle">
-                    <label for="polygon-labels-toggle">
-                        <i class="fas fa-tag polygon-label-icon"></i>
-                        Veredas
-                    </label>
-                </div>
+                <!-- <div class="layer-toggle">
+                </div> -->
             </div>
         </div>
     </div>
@@ -191,7 +251,9 @@
     </div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet-ajax/2.1.0/leaflet.ajax.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <script src="js/script.js"></script>
 </body>
 </html>

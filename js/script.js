@@ -1,5 +1,5 @@
 // Initialize the map centered on Colombia
-const map = L.map('map').setView([4.5709, -74.2973], 6);
+const map = L.map('map').setView([7.0456, -74.2973], 7);
 
 // Create panes for z-index control
 map.createPane('polygons');
@@ -19,40 +19,59 @@ const baseMaps = {
         attribution: '&copy; OpenStreetMap contributors',
         pane: 'tilePane'
     }),
-  /*   "ESRI Satellite": L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-        attribution: 'Tiles &copy; Esri',
-        pane: 'tilePane'
-    }) */
+    // "ESRI Satellite": L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+    //     attribution: 'Tiles &copy; Esri',
+    //     pane: 'tilePane'
+    // })
 };
-
 
 // Add default base map
 baseMaps["OpenStreetMap"].addTo(map);
+
 // Layer styles
 const styles = {
     point: {
         icon: function(zoomLevel) {
-            const size = Math.max(8, 14 - (15 - zoomLevel));
+            const base = Math.max(8, 14 - (15 - zoomLevel));
+            const size = base * 2; // double the original size
             return L.divIcon({
-                className: 'custom-fa-marker',
-                html: `<i class="fa-regular fa-plus" style="font-size: ${size}px;"></i>`,
-                iconSize: [size, size],
-                iconAnchor: [size/2, size/2],
-                pane: 'points'
+            className: 'custom-fa-marker',
+            html: `<i class="fa-regular fa-plus" style="font-size: ${size}px;"></i>`,
+            iconSize: [size, size],
+            iconAnchor: [size / 2, size / 2],
+            pane: 'points'
             });
         }
     },
-    polyline1: { color: '#DE1414', weight: 4, opacity: 0.8, pane: 'polylines' },
-    polyline2: { color: '#5CEE0E', weight: 4, opacity: 0.8, pane: 'polylines' },
-    polyline3: { color: '#EE0ECC', weight: 4, opacity: 0.8, pane: 'polylines' },
+    polyline1: { color: '#1df00a', weight: 4, opacity: 0.8, pane: 'polylines' },
+    polyline2: { color: '#fac107', weight: 4, opacity: 0.8, pane: 'polylines' },
+    polyline3: { color: '#e4a0d8', weight: 4, opacity: 0.8, pane: 'polylines' },
     polyline4: { color: '#0E30EE', weight: 4, opacity: 0.8, pane: 'polylines' },
+    polyline5: { color: '#0ed4ee', weight: 4, opacity: 0.8, pane: 'polylines' },
+    polyline6: { color: '#9c0eee', weight: 4, opacity: 0.8, pane: 'polylines' },
     polygon: { 
         fillColor: '#EDED0E', 
         weight: 1, 
         color: '#EDBD0E',
         fillOpacity: 0.3,
         pane: 'polygons'
-    }
+    },
+    /* add Style for Veredas y Municipios */
+
+    veredas: {
+        fillColor: '#EDED0E',
+        color: '#C8B800',
+        weight: 1,
+        fillOpacity: 0.3,
+        pane: 'polygons'
+    },
+    municipios: {
+        fillColor: '#378290',
+        color: '#276070',
+        weight: 1,
+        fillOpacity: 0.3,
+        pane: 'polygons'
+    },
 };
 
 // Create layer groups
@@ -62,14 +81,101 @@ const layers = {
     polyline2: L.layerGroup().addTo(map),
     polyline3: L.layerGroup().addTo(map),
     polyline4: L.layerGroup().addTo(map),
+    polyline5: L.layerGroup().addTo(map),
+    polyline6: L.layerGroup().addTo(map),
     polygon: L.layerGroup().addTo(map),
     pointLabels: L.layerGroup(),
     polylineLabels: L.layerGroup(),
     polygonLabels: L.layerGroup()
 };
 
-// Store point layers for zoom updates
-const pointLayers = [];
+// Add Veredas, Municipios and Procesos layers
+const veredasLayer = L.layerGroup();
+const municipiosLayer = L.layerGroup();
+const procesosCluster = L.markerClusterGroup({ chunkedLoading: true }); // for performance
+
+
+// Add checkbox toggles
+function setupLazyToggle(id, layer, options = {}) {
+    const checkbox = document.getElementById(id);
+    if (!checkbox) return;
+
+    checkbox.addEventListener('change', function () {
+        if (this.checked) {
+            if (layer.getLayers().length === 0 && options.lazyUrl) {
+                if (options.isCluster) {
+                    fetch(options.lazyUrl)
+                        .then(res => res.json())
+                        .then(data => {
+                            const clusterLayer = L.geoJSON(data, {
+                                pointToLayer: (feature, latlng) => {
+                                    const marker = L.marker(latlng, {
+                                        icon: styles.point.icon(map.getZoom()),
+                                        pane: 'points'
+                                    });
+
+                                    feature.layerType = 'point';
+                                    feature.layer = marker;
+                                    allFeatures.push(feature);
+
+                                    return marker.bindPopup(
+                                        Object.entries(feature.properties)
+                                            .map(([k, v]) => `<b>${k}:</b> ${v}`)
+                                            .join('<br>')
+                                    );
+                                }
+                            });
+
+                            layer.addLayer(clusterLayer);
+                            buildSearchIndex(allFeatures);
+                            map.addLayer(layer);
+                        });
+                } else {
+                    loadGeoJSON(options.lazyUrl, layer, options.style, options.labelField, options.layerType);
+                    map.addLayer(layer);
+                }
+            } else {
+                map.addLayer(layer);
+            }
+        } else {
+            map.removeLayer(layer);
+        }
+    });
+}
+
+// Lazy load layers only when user activates them
+setupLazyToggle('veredas-layer-toggle', veredasLayer, {
+    lazyUrl: 'geojs/Veredas300.geojson',
+    style: styles.veredas,
+    labelField: 'VEREDA',
+    layerType: 'polygon'
+});
+
+setupLazyToggle('municipios-layer-toggle', municipiosLayer, {
+    lazyUrl: 'geojs/Municipios300.geojson',
+    style: styles.municipios,
+    labelField: 'MUNICIPIO',
+    layerType: 'polygon'
+});
+
+setupLazyToggle('procesos-layer-toggle', procesosCluster, {
+    lazyUrl: 'geojs/Eventos.geojson',
+    isCluster: true
+});
+
+// Función para construir el índice de búsqueda
+function buildSearchIndex(features) {
+    searchIndex = features.flatMap(feature => {
+        if (!feature.properties) return [];
+        
+        return Object.entries(feature.properties).map(([key, value]) => ({
+            feature,
+            key,
+            value: String(value).toLowerCase(),
+            layerType: feature.layerType
+        }));
+    });
+}
 
 // Base map toggles
 document.getElementById('base-street')?.addEventListener('change', function() {
@@ -79,7 +185,6 @@ document.getElementById('base-street')?.addEventListener('change', function() {
     }
 });
 
-
 document.getElementById('base-satellite')?.addEventListener('change', function() {
     if (this.checked) {
         map.removeLayer(baseMaps["OpenStreetMap"]);
@@ -87,16 +192,22 @@ document.getElementById('base-satellite')?.addEventListener('change', function()
     }
 });
 
+// Store point layers for zoom updates
+const pointLayers = [];
+let allFeatures = []; // Almacenará todas las características para búsqueda
+let searchIndex = []; // <-- Añade esta línea
+
+// Dashboard
 const allPolylineFeatures = [];
-const allFeatures = [];
-// GeoJSON loader
+// const allFeatures = [];
+
 function loadGeoJSON(url, layer, style, labelField, layerType = 'polygon') {
     fetch(url)
         .then(response => response.json())
         .then(data => {
             layer.clearLayers();
 
-            const geojson = L.geoJSON(data, {
+            const geoJSONLayer = L.geoJSON(data, {
                 pointToLayer: (feature, latlng) => {
                     if (layerType === 'point') {
                         const marker = L.marker(latlng, {
@@ -104,19 +215,25 @@ function loadGeoJSON(url, layer, style, labelField, layerType = 'polygon') {
                             pane: 'points'
                         });
                         pointLayers.push(marker);
+
+                        feature.layerType = 'point';
                         feature.layer = marker;
-                        feature.layerType = layerType;
                         allFeatures.push(feature);
+
                         return marker;
                     }
                     return L.circleMarker(latlng, style);
                 },
                 style: style,
-                onEachFeature: (feature, lyr) => {
-                    lyr.feature = feature;
-                    feature.layer = lyr;
+                onEachFeature: (feature, layer) => {
+                    layer.feature = feature;
+                    feature.layer = layer;
                     feature.layerType = layerType;
                     allFeatures.push(feature);
+
+                    if (layerType === 'polyline') {
+                        allPolylineFeatures.push(feature);
+                    }
 
                     if (feature.properties) {
                         let popupContent = '<div class="info"><h4>Información</h4>';
@@ -124,47 +241,84 @@ function loadGeoJSON(url, layer, style, labelField, layerType = 'polygon') {
                             popupContent += `<b>${prop}:</b> ${feature.properties[prop]}<br>`;
                         }
                         popupContent += '</div>';
-                        lyr.bindPopup(popupContent);
+                        layer.bindPopup(popupContent);
                     }
 
                     if (labelField && feature.properties?.[labelField]) {
-                        const position = lyr.getBounds?.().getCenter() || lyr.getLatLng();
-                        const labelColor = style.color || '#000';
+                        const position = layer.getBounds?.().getCenter() || layer.getLatLng();
+                        const labelColor = layerType === 'polygon' ? '#000307' :
+                                         layerType === 'polyline' ? style.color : '#ff0000';
 
                         const label = L.marker(position, {
                             icon: L.divIcon({
                                 className: 'map-label',
-                                html: `<div style="color:${labelColor}; font-weight:bold;">${feature.properties[labelField]}</div>`
+                                html: `<div style="font-size:12px;font-weight:bold;color:${labelColor};
+                                      text-shadow:-1px -1px 0 #fff,1px -1px 0 #fff,-1px 1px 0 #fff,1px 1px 0 #fff;">
+                                      ${feature.properties[labelField]}</div>`,
+                                iconSize: [100, 20],
+                                pane: 'labels'
                             }),
                             interactive: false
                         });
 
                         const labelLayer = layerType === 'polygon' ? layers.polygonLabels :
-                                            layerType === 'polyline' ? layers.polylineLabels :
-                                            layers.pointLabels;
-
+                                        layerType === 'polyline' ? layers.polylineLabels :
+                                        layers.pointLabels;
                         labelLayer.addLayer(label);
                     }
+
+                    const highlightStyle = {
+                        weight: style.weight + 2,
+                        color: style.color,
+                        opacity: 1,
+                        dashArray: ''
+                    };
+
+                    layer.on('mouseover', function (e) {
+                        this.setStyle(highlightStyle);
+                        this.bringToFront();
+
+                        if (feature.properties) {
+                            layer.bindTooltip(
+                                Object.entries(feature.properties)
+                                    .map(([key, value]) => `<b>${key}:</b> ${value}`)
+                                    .join('<br>'),
+                                {
+                                    direction: 'top',
+                                    permanent: false,
+                                    className: 'custom-tooltip'
+                                }
+                            ).openTooltip();
+                        }
+                    });
+
+                    layer.on('mouseout', function (e) {
+                        layer.setStyle(style);
+                        layer.unbindTooltip();
+                    });
                 }
             });
 
-            geojson.eachLayer(l => {
+            geoJSONLayer.eachLayer(l => {
                 layer.addLayer(l);
-                if (layerType === 'polyline' && l.feature) {
-                    allPolylineFeatures.push(l.feature);
-                }
             });
+
+            buildSearchIndex(allFeatures);
         })
-        .catch(err => console.error('Error loading', url, err));
+        .catch(console.error);
 }
 
+
 // Load GeoJSON data
-loadGeoJSON('geojs/Edificacion_Cor_D2.geojson', layers.point, {}, 'PK', 'point');
-loadGeoJSON('geojs/Ducto_C1.geojson', layers.polyline1, styles.polyline1, 'TRAMO', 'polyline');
-loadGeoJSON('geojs/Ducto_C2.geojson', layers.polyline2, styles.polyline2, 'TRM_RML', 'polyline');
-loadGeoJSON('geojs/Ducto C3.geojson', layers.polyline3, styles.polyline3, 'TRM_RML', 'polyline');
+// loadGeoJSON('geojs/Edificacion_Cor_D2.geojson', layers.point, {}, 'PK', 'point');
+loadGeoJSON('geojs/DUCTO_RECORRIDO_IEDDV_20250702.geojson', layers.polyline1, styles.polyline1, 'TRAMO', 'polyline');
+loadGeoJSON('geojs/DUCTO_ESTRUCTURACION_IEDDV.geojson', layers.polyline2, styles.polyline2, 'TRAMO', 'polyline');
+loadGeoJSON('geojs/DUCTO_PROGRAMADO_IEDDV.geojson', layers.polyline3, styles.polyline3, 'TRAMO', 'polyline');
+loadGeoJSON('geojs/DUCTO_RECORRIDO_NT_20250702.geojson', layers.polyline4, styles.polyline4, 'TRAMO', 'polyline');
+loadGeoJSON('geojs/DUCTO_ESTRUCTURACION_NT.geojson', layers.polyline5, styles.polyline5, 'TRAMO', 'polyline');
+loadGeoJSON('geojs/DUCTO_PROGRAMADO_NT.geojson', layers.polyline6, styles.polyline6, 'TRAMO', 'polyline');
 // loadGeoJSON('geojs/Ducto_Turno4_Adicional.geojson', layers.polyline4, styles.polyline4, 'TRM_RML', 'polyline');
-loadGeoJSON('geojs/Veredas300.geojson', layers.polygon, styles.polygon, 'VEREDA', 'polygon');
+// loadGeoJSON('geojs/VeredasT5.geojson', layers.polygon, styles.polygon, 'VEREDA', 'polygon');
 
 // Update point icons on zoom
 map.on('zoomend', function() {
@@ -172,6 +326,176 @@ map.on('zoomend', function() {
     pointLayers.forEach(marker => {
         marker.setIcon(styles.point.icon(zoom));
     });
+});
+
+// ==============================================
+// SEARCH FUNCTIONALITY
+// ==============================================
+
+const searchInput = document.getElementById('search-input');
+const searchButton = document.getElementById('search-button');
+const searchResults = document.getElementById('search-results');
+let searchTimeout; // <-- Añade esta línea aquí
+
+// Event listeners para la búsqueda
+searchInput.addEventListener('input', (e) => {
+    clearTimeout(searchTimeout); // <-- Modifica este listener
+    searchTimeout = setTimeout(() => {
+        searchFeatures(e.target.value);
+    }, 300);
+});
+
+// Función para buscar en las características
+function searchFeatures(query) {
+    if (!query || query.length < 2) {
+        searchResults.style.display = 'none';
+        return;
+    }
+
+    // Mostrar mensaje de carga
+    searchResults.innerHTML = '<div class="search-loading">Buscando...</div>';
+    searchResults.style.display = 'block';
+
+    // Retrasar la búsqueda para permitir que se muestre el mensaje
+    setTimeout(() => {
+        const resultsMap = new Map();
+        const queryLower = query.toLowerCase();
+        
+        searchIndex.forEach(item => {
+            if (item.value.includes(queryLower)) {
+                resultsMap.set(item.feature, {
+                    feature: item.feature,
+                    property: item.key,
+                    value: item.feature.properties[item.key],
+                    layerType: item.layerType
+                });
+            }
+        });
+
+        displayResults(Array.from(resultsMap.values()));
+    }, 0);
+}
+
+// Mostrar resultados en el dropdown
+function displayResults(results) {
+    searchResults.innerHTML = '';
+    
+    if (results.length === 0) {
+        const noResults = document.createElement('div');
+        noResults.className = 'search-result-item';
+        noResults.textContent = 'No se encontraron resultados';
+        searchResults.appendChild(noResults);
+    } else {
+        results.slice(0, 10).forEach(result => {
+            const item = document.createElement('div');
+            item.className = 'search-result-item';
+            
+            // Mostrar el valor de la propiedad que coincidió
+            item.textContent = result.value;
+            
+            // Almacenar referencia al feature para cuando se seleccione
+            item.dataset.featureIndex = allFeatures.indexOf(result.feature);
+            
+            item.addEventListener('click', () => {
+                selectResult(result.feature);
+            });
+            
+            searchResults.appendChild(item);
+        });
+    }
+    
+    searchResults.style.display = results.length > 0 ? 'block' : 'none';
+}
+
+// Seleccionar un resultado y centrar el mapa en él
+function selectResult(feature) {
+    // Limpiar estilos anteriores
+    allFeatures.forEach(f => {
+        if (f.layer.setStyle) {
+            f.layer.setStyle(styles[f.layerType] || {});
+        }
+    });
+
+    // Resaltar el feature seleccionado
+    if (feature.layer.setStyle) {
+        feature.layer.setStyle({
+            color: '#FF00FF',
+            weight: 5,
+            fillOpacity: 0.7
+        });
+        
+        // Quitar el resaltado después de 5 segundos
+        setTimeout(() => {
+            feature.layer.setStyle(styles[feature.layerType] || {});
+        }, 5000);
+    }
+    searchResults.style.display = 'none';
+    searchInput.value = ''; // Opcional: limpiar el input después de seleccionar
+    
+    let latlng;
+    
+    // Obtener la posición según el tipo de capa
+    if (feature.layerType === 'point') {
+        latlng = feature.layer.getLatLng();
+    } else {
+        // Para polígonos y polilíneas, usar el centro del bounds
+        latlng = feature.layer.getBounds().getCenter();
+    }
+    
+    // Centrar el mapa y abrir el popup si existe
+    map.setView(latlng, 15);
+    
+    if (feature.layer.getPopup) {
+        feature.layer.openPopup();
+    }
+}
+
+// Event listeners para la búsqueda
+searchInput.addEventListener('input', (e) => {
+    searchFeatures(e.target.value);
+});
+
+searchButton.addEventListener('click', () => {
+    searchFeatures(searchInput.value);
+});
+
+// Cerrar los resultados cuando se hace clic fuera
+document.addEventListener('click', (e) => {
+    if (!e.target.closest('.search-control')) {
+        searchResults.style.display = 'none';
+    }
+});
+
+// Permitir navegación con teclado en los resultados
+searchInput.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp' || e.key === 'Enter') {
+        const items = searchResults.querySelectorAll('.search-result-item');
+        if (items.length === 0) return;
+        
+        let currentIndex = -1;
+        
+        // Encontrar el ítem actualmente seleccionado
+        items.forEach((item, index) => {
+            if (item.classList.contains('selected')) {
+                currentIndex = index;
+                item.classList.remove('selected');
+            }
+        });
+        
+        if (e.key === 'ArrowDown') {
+            currentIndex = (currentIndex + 1) % items.length;
+        } else if (e.key === 'ArrowUp') {
+            currentIndex = (currentIndex - 1 + items.length) % items.length;
+        } else if (e.key === 'Enter' && currentIndex !== -1) {
+            items[currentIndex].click();
+            return;
+        }
+        
+        if (currentIndex >= 0) {
+            items[currentIndex].classList.add('selected');
+            items[currentIndex].scrollIntoView({ block: 'nearest' });
+        }
+    }
 });
 
 // ==============================================
@@ -245,15 +569,18 @@ function setupToggle(id, layer) {
     });
 }
 
-setupToggle('point-layer-toggle', layers.point);
+// setupToggle('point-layer-toggle', layers.point);
 setupToggle('polyline1-layer-toggle', layers.polyline1);
 setupToggle('polyline2-layer-toggle', layers.polyline2);
 setupToggle('polyline3-layer-toggle', layers.polyline3);
 setupToggle('polyline4-layer-toggle', layers.polyline4);
-setupToggle('polygon-layer-toggle', layers.polygon);
-setupToggle('point-labels-toggle', layers.pointLabels);
+setupToggle('polyline5-layer-toggle', layers.polyline5);
+setupToggle('polyline6-layer-toggle', layers.polyline6);
+// setupToggle('polyline4-layer-toggle', layers.polyline4);
+// setupToggle('polygon-layer-toggle', layers.polygon);
+// setupToggle('point-labels-toggle', layers.pointLabels);
 setupToggle('polyline-labels-toggle', layers.polylineLabels);
-setupToggle('polygon-labels-toggle', layers.polygonLabels);
+// setupToggle('polygon-labels-toggle', layers.polygonLabels);
 
 // ==============================================
 // COLLAPSIBLE SECTIONS
@@ -270,6 +597,41 @@ document.querySelectorAll('.control-section.collapsible').forEach(section => {
         icon.classList.toggle('fa-chevron-up', wasActive);
         icon.classList.toggle('fa-chevron-down', !wasActive);
     });
+});
+
+
+// ==============================================
+// Search by Coordinates
+// ==============================================
+let coordMarker = null;
+
+document.getElementById('coord-search-btn').addEventListener('click', () => {
+  const lat = parseFloat(document.getElementById('coord-lat').value);
+  const lng = parseFloat(document.getElementById('coord-lng').value);
+
+  if (isNaN(lat) || isNaN(lng)) {
+    alert('Por favor, ingrese coordenadas válidas (números).');
+    return;
+  }
+
+  const latlng = L.latLng(lat, lng);
+
+  // Remove previous marker
+  if (coordMarker) {
+    map.removeLayer(coordMarker);
+  }
+
+  coordMarker = L.marker(latlng, {
+    icon: L.icon({
+      iconUrl: 'https://cdn-icons-png.flaticon.com/512/684/684908.png',
+      iconSize: [28, 28],
+      iconAnchor: [14, 28]
+    })
+  }).addTo(map);
+
+  coordMarker.bindPopup(`📍 Coordenadas:<br><b>Lat:</b> ${lat}<br><b>Lng:</b> ${lng}`).openPopup();
+
+  map.setView(latlng, 16);
 });
 
 // ==============================================
@@ -437,23 +799,40 @@ const statsControl = {
     },
 
     exportToExcel: function () {
-        const ws_data = [
-            ['Grupo', 'Cantidad', 'Longitud total (km)', 'Promedio (km)']
-        ];
+        const features = document.getElementById('stats-layer-select').value === 'all'
+            ? allPolylineFeatures
+            : layers[document.getElementById('stats-layer-select').value]
+                .getLayers()
+                .map(l => l.feature)
+                .filter(f => f);
 
-        for (const [key, val] of Object.entries(this.exportData)) {
-            ws_data.push([
-                key,
-                val.count,
-                parseFloat(val.length.toFixed(2)),
-                parseFloat((val.length / val.count).toFixed(2))
-            ]);
+        if (features.length === 0) {
+            alert("No hay datos para exportar.");
+            return;
         }
 
-        const ws = XLSX.utils.aoa_to_sheet(ws_data);
+        // Build header (union of all keys)
+        const allKeys = new Set();
+        features.forEach(f => {
+            if (f?.properties) {
+            Object.keys(f.properties).forEach(k => allKeys.add(k));
+            }
+        });
+
+        const headers = Array.from(allKeys);
+        const rows = [headers];
+
+        // Add feature property rows
+        features.forEach(f => {
+            const row = headers.map(key => f.properties?.[key] ?? '');
+            rows.push(row);
+        });
+
+        // Convert to sheet and export
+        const ws = XLSX.utils.aoa_to_sheet(rows);
         const wb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb, ws, 'Estadísticas');
-        XLSX.writeFile(wb, 'estadisticas.xlsx');
+        XLSX.utils.book_append_sheet(wb, ws, 'GeoJSON Atributos');
+        XLSX.writeFile(wb, 'Estadísticas_Avance_IEDDV.xlsx');
     }
 };
 
@@ -484,6 +863,7 @@ setTimeout(() => {
   statsControl.calculate();
   populateAttributeSuggestions();
 }, 2000);
+
 // ==============================================
 // COORDINATE DISPLAY
 // ==============================================
@@ -542,4 +922,3 @@ updateCoordinateDisplay(map.getCenter());
 //     `;
 //     return div;
 // };
-/* legend.addTo(map); */

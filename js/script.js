@@ -43,6 +43,19 @@ const styles = {
             });
         }
     },
+    edificacion: {
+        icon: function(zoomLevel) {
+            const base = Math.max(8, 14 - (15 - zoomLevel));
+            const size = base * 2; // double the original size
+            return L.divIcon({
+            className: 'custom-fa-marker',
+            html: `<i class="fa-solid fa-house" style="font-size: ${size}px;"></i>`,
+            iconSize: [size, size],
+            iconAnchor: [size / 2, size / 2],
+            pane: 'points'
+            });
+        }
+    },
     polyline1: { color: '#1df00a', weight: 4, opacity: 0.8, pane: 'polylines' },
     polyline2: { color: '#fac107', weight: 4, opacity: 0.8, pane: 'polylines' },
     polyline3: { color: '#e4a0d8', weight: 4, opacity: 0.8, pane: 'polylines' },
@@ -93,6 +106,7 @@ const layers = {
 const veredasLayer = L.layerGroup();
 const municipiosLayer = L.layerGroup();
 const procesosCluster = L.markerClusterGroup({ chunkedLoading: true }); // for performance
+const edificacionCluster = L.markerClusterGroup({ chunkedLoading: true }); // for performance
 
 
 // Add checkbox toggles
@@ -110,7 +124,7 @@ function setupLazyToggle(id, layer, options = {}) {
                             const clusterLayer = L.geoJSON(data, {
                                 pointToLayer: (feature, latlng) => {
                                     const marker = L.marker(latlng, {
-                                        icon: styles.point.icon(map.getZoom()),
+                                        icon: (options.style?.icon || styles.point.icon)(map.getZoom()),
                                         pane: 'points'
                                     });
 
@@ -163,6 +177,14 @@ setupLazyToggle('procesos-layer-toggle', procesosCluster, {
     isCluster: true
 });
 
+setupLazyToggle('edificacion-layer-toggle', edificacionCluster,{
+    lazyUrl: 'geojs/Edificacion_GBS.geojson',
+    style: styles.edificacion,
+    labelField: 'PK',
+    layerType: 'point',
+    isCluster: true
+});
+
 // Función para construir el índice de búsqueda
 function buildSearchIndex(features) {
     searchIndex = features.flatMap(feature => {
@@ -211,7 +233,7 @@ function loadGeoJSON(url, layer, style, labelField, layerType = 'polygon') {
                 pointToLayer: (feature, latlng) => {
                     if (layerType === 'point') {
                         const marker = L.marker(latlng, {
-                            icon: styles.point.icon(map.getZoom()),
+                            icon: style?.icon ? style.icon(map.getZoom()) : undefined,
                             pane: 'points'
                         });
                         pointLayers.push(marker);
@@ -244,17 +266,20 @@ function loadGeoJSON(url, layer, style, labelField, layerType = 'polygon') {
                         layer.bindPopup(popupContent);
                     }
 
+                    // === ADD LABELS FOR POLYLINES AND POLYGONS ===
                     if (labelField && feature.properties?.[labelField]) {
-                        const position = layer.getBounds?.().getCenter() || layer.getLatLng();
+                        const position = layer.getBounds?.().getCenter() || layer.getLatLng?.();
+                        if (!position) return;
+
                         const labelColor = layerType === 'polygon' ? '#000307' :
-                                         layerType === 'polyline' ? style.color : '#ff0000';
+                                          layerType === 'polyline' ? style.color : '#ff0000';
 
                         const label = L.marker(position, {
                             icon: L.divIcon({
                                 className: 'map-label',
                                 html: `<div style="font-size:12px;font-weight:bold;color:${labelColor};
-                                      text-shadow:-1px -1px 0 #fff,1px -1px 0 #fff,-1px 1px 0 #fff,1px 1px 0 #fff;">
-                                      ${feature.properties[labelField]}</div>`,
+                                    text-shadow:-1px -1px 0 #fff,1px -1px 0 #fff,-1px 1px 0 #fff,1px 1px 0 #fff;">
+                                    ${feature.properties[labelField]}</div>`,
                                 iconSize: [100, 20],
                                 pane: 'labels'
                             }),
@@ -262,19 +287,20 @@ function loadGeoJSON(url, layer, style, labelField, layerType = 'polygon') {
                         });
 
                         const labelLayer = layerType === 'polygon' ? layers.polygonLabels :
-                                        layerType === 'polyline' ? layers.polylineLabels :
-                                        layers.pointLabels;
+                                           layerType === 'polyline' ? layers.polylineLabels :
+                                           layers.pointLabels;
+
                         labelLayer.addLayer(label);
                     }
 
                     const highlightStyle = {
-                        weight: style.weight + 2,
-                        color: style.color,
+                        weight: style.weight + 2 || 3,
+                        color: style.color || '#f00',
                         opacity: 1,
                         dashArray: ''
                     };
 
-                    layer.on('mouseover', function (e) {
+                    layer.on('mouseover', function () {
                         this.setStyle(highlightStyle);
                         this.bringToFront();
 
@@ -292,7 +318,7 @@ function loadGeoJSON(url, layer, style, labelField, layerType = 'polygon') {
                         }
                     });
 
-                    layer.on('mouseout', function (e) {
+                    layer.on('mouseout', function () {
                         layer.setStyle(style);
                         layer.unbindTooltip();
                     });
@@ -307,6 +333,64 @@ function loadGeoJSON(url, layer, style, labelField, layerType = 'polygon') {
         })
         .catch(console.error);
 }
+
+
+// === Checkbox logic to lazily load building and point labels ===
+const buildingLabelLayer = L.layerGroup();
+const pointLabelLayer = L.layerGroup();
+
+function setupLabelToggle(toggleId, geojsonUrl, labelLayer, labelField, style, areaCheckFunction) {
+    const checkbox = document.getElementById(toggleId);
+    if (!checkbox) return;
+
+    checkbox.addEventListener('change', function () {
+        if (this.checked) {
+            if (labelLayer.getLayers().length === 0) {
+                // Lazy load labels within current map bounds if areaCheckFunction is defined
+                fetch(geojsonUrl)
+                    .then(res => res.json())
+                    .then(data => {
+                        labelLayer.clearLayers();
+
+                        L.geoJSON(data, {
+                            filter: feature => {
+                                const latlng = feature.geometry.type === 'Point'
+                                    ? L.latLng(feature.geometry.coordinates[1], feature.geometry.coordinates[0])
+                                    : null;
+                                return !areaCheckFunction || (latlng && areaCheckFunction(latlng));
+                            },
+                            onEachFeature: (feature, layer) => {
+                                const latlng = layer.getLatLng?.();
+                                if (!latlng) return;
+
+                                const label = L.marker(latlng, {
+                                    icon: L.divIcon({
+                                        className: 'map-label',
+                                        html: `<div style="font-size:12px;font-weight:bold;color:${style?.color || '#000'};
+                                            text-shadow:-1px -1px 0 #fff,1px -1px 0 #fff,-1px 1px 0 #fff,1px 1px 0 #fff;">
+                                            ${feature.properties?.[labelField] || ''}</div>`
+                                    }),
+                                    interactive: false
+                                });
+
+                                labelLayer.addLayer(label);
+                            }
+                        });
+
+                        map.addLayer(labelLayer);
+                    });
+            } else {
+                map.addLayer(labelLayer);
+            }
+        } else {
+            map.removeLayer(labelLayer);
+        }
+    });
+}
+
+// Setup the lazy label checkboxes
+setupLabelToggle('edificacion-labels-toggle', 'geojs/Edificacion_GBS.geojson', buildingLabelLayer, 'PK', styles.building, latlng => map.getBounds().contains(latlng));
+setupLabelToggle('eventos-labels-toggle', 'geojs/Eventos.geojson', pointLabelLayer, 'PK_INICIO', styles.point, latlng => map.getBounds().contains(latlng));
 
 
 // Load GeoJSON data
@@ -591,12 +675,32 @@ document.querySelectorAll('.control-section.collapsible').forEach(section => {
     const content = section.querySelector('.section-content');
     const icon = header.querySelector('i');
     
-    header.addEventListener('click', () => {
-        const wasActive = section.classList.toggle('active');
-        content.style.maxHeight = wasActive ? content.scrollHeight + 'px' : '0';
-        icon.classList.toggle('fa-chevron-up', wasActive);
-        icon.classList.toggle('fa-chevron-down', !wasActive);
-    });
+// Initial state (collapsed if not-active)
+  if (section.classList.contains('not-active')) {
+    content.style.maxHeight = '0px';
+    icon.classList.add('fa-chevron-down');
+    icon.classList.remove('fa-chevron-up');
+  } else {
+    content.style.maxHeight = content.scrollHeight + 'px';
+    icon.classList.add('fa-chevron-up');
+    icon.classList.remove('fa-chevron-down');
+  }
+
+  // Toggle on click
+  header.addEventListener('click', () => {
+    const isOpen = section.classList.toggle('active');
+    section.classList.remove('not-active');
+
+    if (isOpen) {
+      content.style.maxHeight = content.scrollHeight + 'px';
+      icon.classList.add('fa-chevron-up');
+      icon.classList.remove('fa-chevron-down');
+    } else {
+      content.style.maxHeight = '0px';
+      icon.classList.add('fa-chevron-down');
+      icon.classList.remove('fa-chevron-up');
+    }
+  });
 });
 
 

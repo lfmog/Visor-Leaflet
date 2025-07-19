@@ -26,16 +26,31 @@ const baseMaps = {
 baseMaps["OpenStreetMap"].addTo(map);
 
 // Layer styles
+// Layer styles
 const styles = {
     point: {
         icon: function(zoomLevel) {
-            const size = Math.max(8, 14 - (15 - zoomLevel));
+            const base = Math.max(8, 14 - (15 - zoomLevel));
+            const size = base * 2; // double the original size
             return L.divIcon({
-                className: 'custom-fa-marker',
-                html: `<i class="fa-regular fa-plus" style="font-size: ${size}px;"></i>`,
-                iconSize: [size, size],
-                iconAnchor: [size/2, size/2],
-                pane: 'points'
+            className: 'custom-fa-marker',
+            html: `<i class="fa-regular fa-plus" style="font-size: ${size}px;"></i>`,
+            iconSize: [size, size],
+            iconAnchor: [size / 2, size / 2],
+            pane: 'points'
+            });
+        }
+    },
+    Bulding: {
+        icon: function(zoomLevel) {
+            const base = Math.max(8, 14 - (15 - zoomLevel));
+            const size = base * 2; // double the original size
+            return L.divIcon({
+            className: 'custom-fa-marker',
+            html: `<i class="fa-solid fa-arrow-up" style="font-size: ${size}px;"></i>`,
+            iconSize: [size, size],
+            iconAnchor: [size / 2, size / 2],
+            pane: 'points'
             });
         }
     },
@@ -51,7 +66,23 @@ const styles = {
         color: '#EDBD0E',
         fillOpacity: 0.3,
         pane: 'polygons'
-    }
+    },
+    /* add Style for Veredas y Municipios */
+
+    veredas: {
+        fillColor: '#EDED0E',
+        color: '#C8B800',
+        weight: 1,
+        fillOpacity: 0.3,
+        pane: 'polygons'
+    },
+    municipios: {
+        fillColor: '#378290',
+        color: '#276070',
+        weight: 1,
+        fillOpacity: 0.3,
+        pane: 'polygons'
+    },
 };
 
 // Create layer groups
@@ -69,64 +100,88 @@ const layers = {
     polygonLabels: L.layerGroup()
 };
 
-// Add Veredas, Muncipios and Eventos
+// Add Veredas, Municipios and Procesos layers
 const veredasLayer = L.layerGroup();
 const municipiosLayer = L.layerGroup();
 const procesosCluster = L.markerClusterGroup({ chunkedLoading: true }); // for performance
+const BuldingCluster = L.markerClusterGroup({ chunkedLoading: true }); // for performance
 
-// Add checkbox toggles at the bottom of your setupToggle() area:
-setupToggle('veredas-layer-toggle', veredasLayer);
-setupToggle('municipios-layer-toggle', municipiosLayer);
-setupToggle('procesos-layer-toggle', procesosCluster);
 
-// Now load GeoJSON only on demand (lazy loading logic)
-document.getElementById('veredas-layer-toggle')?.addEventListener('change', function() {
-  if (this.checked && veredasLayer.getLayers().length === 0) {
-    loadGeoJSON('geojs/Veredas300.geojson', veredasLayer, styles.polygon, 'VEREDA', 'polygon');
-  }
-  this.checked ? map.addLayer(veredasLayer) : map.removeLayer(veredasLayer);
+// Add checkbox toggles
+function setupLazyToggle(id, layer, options = {}) {
+    const checkbox = document.getElementById(id);
+    if (!checkbox) return;
+
+    checkbox.addEventListener('change', function () {
+        if (this.checked) {
+            if (layer.getLayers().length === 0 && options.lazyUrl) {
+                if (options.isCluster) {
+                    fetch(options.lazyUrl)
+                        .then(res => res.json())
+                        .then(data => {
+                            const clusterLayer = L.geoJSON(data, {
+                                pointToLayer: (feature, latlng) => {
+                                    const marker = L.marker(latlng, {
+                                        icon: (options.style?.icon || styles.point.icon)(map.getZoom()),
+                                        pane: 'points'
+                                    });
+
+                                    feature.layerType = 'point';
+                                    feature.layer = marker;
+                                    allFeatures.push(feature);
+
+                                    return marker.bindPopup(
+                                        Object.entries(feature.properties)
+                                            .map(([k, v]) => `<b>${k}:</b> ${v}`)
+                                            .join('<br>')
+                                    );
+                                }
+                            });
+
+                            layer.addLayer(clusterLayer);
+                            buildSearchIndex(allFeatures);
+                            map.addLayer(layer);
+                        });
+                } else {
+                    loadGeoJSON(options.lazyUrl, layer, options.style, options.labelField, options.layerType);
+                    map.addLayer(layer);
+                }
+            } else {
+                map.addLayer(layer);
+            }
+        } else {
+            map.removeLayer(layer);
+        }
+    });
+}
+
+// Lazy load layers only when user activates them
+setupLazyToggle('veredas-layer-toggle', veredasLayer, {
+    lazyUrl: 'geojs/Veredas300.geojson',
+    style: styles.veredas,
+    labelField: 'VEREDA',
+    layerType: 'polygon'
 });
 
-document.getElementById('municipios-layer-toggle')?.addEventListener('change', function() {
-  if (this.checked && municipiosLayer.getLayers().length === 0) {
-    loadGeoJSON('geojs/Municipios300.geojson', municipiosLayer, styles.polygon, 'MUNICIPIO', 'polygon');
-  }
-  this.checked ? map.addLayer(municipiosLayer) : map.removeLayer(municipiosLayer);
+setupLazyToggle('municipios-layer-toggle', municipiosLayer, {
+    lazyUrl: 'geojs/Municipios300.geojson',
+    style: styles.municipios,
+    labelField: 'MUNICIPIO',
+    layerType: 'polygon'
 });
 
-document.getElementById('procesos-layer-toggle')?.addEventListener('change', function() {
-  if (this.checked && procesosCluster.getLayers().length === 0) {
-    fetch('geojs/Procesos.geojson')
-      .then(res => res.json())
-      .then(data => {
-        const geoJsonLayer = L.geoJSON(data, {
-          pointToLayer: (feature, latlng) => {
-            const marker = L.marker(latlng, {
-              icon: styles.point.icon(map.getZoom()),
-              pane: 'points'
-            });
-
-            feature.layerType = 'point';
-            feature.layer = marker;
-            allFeatures.push(feature);
-
-            return marker.bindPopup(
-              Object.entries(feature.properties)
-                .map(([k, v]) => `<b>${k}:</b> ${v}`)
-                .join('<br>')
-            );
-          }
-        });
-
-        procesosCluster.addLayer(geoJsonLayer);
-        buildSearchIndex(allFeatures);
-        map.addLayer(procesosCluster);
-      });
-  } else {
-    this.checked ? map.addLayer(procesosCluster) : map.removeLayer(procesosCluster);
-  }
+setupLazyToggle('procesos-layer-toggle', procesosCluster, {
+    lazyUrl: 'geojs/Procesos.geojson',
+    isCluster: true
 });
 
+setupLazyToggle('Bulding-layer-toggle', BuldingCluster, layers.Bulding,{
+    lazyUrl: 'geojs/Bulding.geojson',
+    style: styles.Bulding,
+    labelField: 'Nombre',
+    layerType: 'point',
+    isCluster: true
+});
 
 // Función para construir el índice de búsqueda
 function buildSearchIndex(features) {
@@ -811,3 +866,276 @@ document.getElementById('coord-format').addEventListener('change', (e) => {
 // Initialize coordinate display
 updateCoordinateDisplay(map.getCenter());
 
+///////////////////////////////////////////////////////////////////
+// Add checkbox toggles
+function setupLazyToggle(id, layer, options = {}) {
+    const checkbox = document.getElementById(id);
+    if (!checkbox) return;
+
+    checkbox.addEventListener('change', function () {
+        if (this.checked) {
+            if (layer.getLayers().length === 0 && options.lazyUrl) {
+                if (options.isCluster) {
+                    fetch(options.lazyUrl)
+                        .then(res => res.json())
+                        .then(data => {
+                            const clusterLayer = L.geoJSON(data, {
+                                pointToLayer: (feature, latlng) => {
+                                    const marker = L.marker(latlng, {
+                                        icon: (options.style?.icon || styles.point.icon)(map.getZoom()),
+                                        pane: 'points'
+                                    });
+
+                                    feature.layerType = 'point';
+                                    feature.layer = marker;
+                                    allFeatures.push(feature);
+
+                                    return marker.bindPopup(
+                                        Object.entries(feature.properties)
+                                            .map(([k, v]) => `<b>${k}:</b> ${v}`)
+                                            .join('<br>')
+                                    );
+                                }
+                            });
+
+                            layer.addLayer(clusterLayer);
+                            buildSearchIndex(allFeatures);
+                            map.addLayer(layer);
+                        });
+                } else {
+                    loadGeoJSON(options.lazyUrl, layer, options.style, options.labelField, options.layerType);
+                    map.addLayer(layer);
+                }
+            } else {
+                map.addLayer(layer);
+            }
+        } else {
+            map.removeLayer(layer);
+        }
+    });
+}
+
+// Lazy load layers only when user activates them
+setupLazyToggle('veredas-layer-toggle', veredasLayer, {
+    lazyUrl: 'geojs/Veredas300.geojson',
+    style: styles.veredas,
+    labelField: 'VEREDA',
+    layerType: 'polygon'
+});
+
+setupLazyToggle('municipios-layer-toggle', municipiosLayer, {
+    lazyUrl: 'geojs/Municipios300.geojson',
+    style: styles.municipios,
+    labelField: 'MUNICIPIO',
+    layerType: 'polygon'
+});
+
+setupLazyToggle('procesos-layer-toggle', procesosCluster, {
+    lazyUrl: 'geojs/puntos.geojson',
+    isCluster: true
+});
+
+setupLazyToggle('building-layer-toggle', edificacionCluster,{
+    lazyUrl: 'geojs/building.geojson',
+    style: styles.edificacion,
+    labelField: 'PK',
+    layerType: 'point',
+    isCluster: true
+});
+
+// Función para construir el índice de búsqueda
+function buildSearchIndex(features) {
+    searchIndex = features.flatMap(feature => {
+        if (!feature.properties) return [];
+        
+        return Object.entries(feature.properties).map(([key, value]) => ({
+            feature,
+            key,
+            value: String(value).toLowerCase(),
+            layerType: feature.layerType
+        }));
+    });
+}
+
+// Base map toggles
+document.getElementById('base-street')?.addEventListener('change', function() {
+    if (this.checked) {
+        map.removeLayer(baseMaps["ESRI Satellite"]);
+        map.addLayer(baseMaps["OpenStreetMap"]);
+    }
+});
+
+document.getElementById('base-satellite')?.addEventListener('change', function() {
+    if (this.checked) {
+        map.removeLayer(baseMaps["OpenStreetMap"]);
+        map.addLayer(baseMaps["ESRI Satellite"]);
+    }
+});
+
+// Store point layers for zoom updates
+const pointLayers = [];
+let allFeatures = []; // Almacenará todas las características para búsqueda
+let searchIndex = []; // <-- Añade esta línea
+
+// Dashboard
+const allPolylineFeatures = [];
+// const allFeatures = [];
+
+function loadGeoJSON(url, layer, style, labelField, layerType = 'polygon') {
+    fetch(url)
+        .then(response => response.json())
+        .then(data => {
+            layer.clearLayers();
+            if (labelLayer) labelLayer.clearLayers();
+
+            const geoJSONLayer = L.geoJSON(data, {
+                pointToLayer: (feature, latlng) => {
+                    if (layerType === 'point') {
+                        const marker = L.marker(latlng, {
+                            icon: styles.point.icon(map.getZoom()),
+                            pane: 'points'
+                        });
+                        feature.layer = marker;
+                        feature.layerType = 'point';
+                        allFeatures.push(feature);
+                        return marker;
+                    }
+                    return L.circleMarker(latlng, style);
+                },
+                style: style,
+                onEachFeature: (feature, layer) => {
+                    layer.feature = feature;
+                    feature.layer = layer;
+                    feature.layerType = layerType;
+                    allFeatures.push(feature);
+
+                    if (layerType === 'polyline') {
+                        allPolylineFeatures.push(feature);
+                    }
+
+                    if (feature.properties) {
+                        let popupContent = '<div class="info"><h4>Información</h4>';
+                        for (const prop in feature.properties) {
+                            popupContent += `<b>${prop}:</b> ${feature.properties[prop]}<br>`;
+                        }
+                        popupContent += '</div>';
+                        layer.bindPopup(popupContent);
+                    }
+
+                    if (labelField && feature.properties?.[labelField] && labelLayer) {
+                        const position = layer.getBounds?.().getCenter?.() || layer.getLatLng?.();
+                        if (!position) return;
+
+                        const label = L.marker(position, {
+                            icon: L.divIcon({
+                                className: 'map-label',
+                                html: `<div style="font-size:12px;font-weight:bold;color:${style?.color || '#000'};
+                                    text-shadow:-1px -1px 0 #fff,1px -1px 0 #fff,-1px 1px 0 #fff,1px 1px 0 #fff;">
+                                    ${feature.properties[labelField]}</div>`,
+                                iconSize: [100, 20],
+                                pane: 'labels'
+                            }),
+                            interactive: false
+                        });
+
+                        labelLayer.addLayer(label);
+                    }
+
+                    const highlightStyle = {
+                        weight: style.weight + 2 || 3,
+                        color: style.color || '#f00',
+                        opacity: 1,
+                        dashArray: ''
+                    };
+
+                    layer.on('mouseover', function () {
+                        this.setStyle(highlightStyle);
+                        this.bringToFront();
+
+                        if (feature.properties) {
+                            layer.bindTooltip(
+                                Object.entries(feature.properties)
+                                    .map(([key, value]) => `<b>${key}:</b> ${value}`)
+                                    .join('<br>'),
+                                {
+                                    direction: 'top',
+                                    permanent: false,
+                                    className: 'custom-tooltip'
+                                }
+                            ).openTooltip();
+                        }
+                    });
+
+                    layer.on('mouseout', function () {
+                        layer.setStyle(style);
+                        layer.unbindTooltip();
+                    });
+                }
+            });
+
+            geoJSONLayer.eachLayer(l => {
+                layer.addLayer(l);
+            });
+
+            buildSearchIndex(allFeatures);
+        })
+        .catch(console.error);
+}
+
+// === Checkbox logic to lazily load building and point labels ===
+const buildingLabelLayer = L.layerGroup();
+const pointLabelLayer = L.layerGroup();
+
+function setupLabelToggle(toggleId, geojsonUrl, labelLayer, labelField, style, areaCheckFunction) {
+    const checkbox = document.getElementById(toggleId);
+    if (!checkbox) return;
+
+    checkbox.addEventListener('change', function () {
+        if (this.checked) {
+            if (labelLayer.getLayers().length === 0) {
+                // Lazy load labels within current map bounds if areaCheckFunction is defined
+                fetch(geojsonUrl)
+                    .then(res => res.json())
+                    .then(data => {
+                        labelLayer.clearLayers();
+
+                        L.geoJSON(data, {
+                            filter: feature => {
+                                const latlng = feature.geometry.type === 'Point'
+                                    ? L.latLng(feature.geometry.coordinates[1], feature.geometry.coordinates[0])
+                                    : null;
+                                return !areaCheckFunction || (latlng && areaCheckFunction(latlng));
+                            },
+                            onEachFeature: (feature, layer) => {
+                                const latlng = layer.getLatLng?.();
+                                if (!latlng) return;
+
+                                const label = L.marker(latlng, {
+                                    icon: L.divIcon({
+                                        className: 'map-label',
+                                        html: `<div style="font-size:12px;font-weight:bold;color:${style?.color || '#000'};
+                                            text-shadow:-1px -1px 0 #fff,1px -1px 0 #fff,-1px 1px 0 #fff,1px 1px 0 #fff;">
+                                            ${feature.properties?.[labelField] || ''}</div>`
+                                    }),
+                                    interactive: false
+                                });
+
+                                labelLayer.addLayer(label);
+                            }
+                        });
+
+                        map.addLayer(labelLayer);
+                    });
+            } else {
+                map.addLayer(labelLayer);
+            }
+        } else {
+            map.removeLayer(labelLayer);
+        }
+    });
+}
+
+// Setup the lazy label checkboxes
+// Setup the lazy label checkboxes
+setupLabelToggle('building-labels-toggle', 'geojs/Building.geojson', buildingLabelLayer, 'Nombre', styles.building, latlng => map.getBounds().contains(latlng));
+setupLabelToggle('point-labels-toggle', 'geojs/Puntos.geojson', pointLabelLayer, 'PK', styles.point, latlng => map.getBounds().contains(latlng));
